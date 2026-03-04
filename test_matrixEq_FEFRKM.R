@@ -23,7 +23,7 @@ print(
         )
     )
 )
-
+# git
 # mean and centroids in compact matrix form
 value <- 0
 for(h in c(1:g)){
