@@ -1,4 +1,6 @@
 kspline = function(t){ 
+  # Roughness penalty matrix calculation #
+  # Cf. Green and Silverman pp. 12/13 #
   T<-length(t)
   h<-matrix(0,T,1)
   Q<-matrix(0,T,T-2)
@@ -18,10 +20,12 @@ kspline = function(t){
     R[i,i-1]=h[i]/6 
   }
   R[T-2,T-2]=(h[T-2]+h[T-1])/3;
-  K<-Q%*%solve(R)%*%t(Q)
+  #### Non Fuzzy Entropic ####
+  #K<-Q%*%solve(R)%*%t(Q)
   #SVD<-svd(K)
   #Lk<-diag(SVD$d)
   #Pk<-SVD$v
-  # list(K=K,Pk=Pk,Lk=Lk)
-  return(K)
+  #list(K=K,Pk=Pk,Lk=Lk)
+  ############################
+  return(Q%*%solve(R)%*%t(Q))
 }
