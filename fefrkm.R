@@ -1,3 +1,3 @@
-fefrkm <- function(U,B,A,C,K,lambda,gamma,eps=1e-6){
+FEFRKM <- function(U,B,A,C,K,lambda,gamma,eps=1e-6){
   
 } 
