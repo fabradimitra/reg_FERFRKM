@@ -3,6 +3,7 @@ library(splines2)
 source("kspline.R")
 source("randgenu.R")
 source("rand_orthogonal.R")
+source("FEFRKM.R")
 
 # Loading data growth
 data(growth)
@@ -56,8 +57,20 @@ C <- t(C)
 # Random generate initial U matrix
 U_init <- randgenu(I, G)
 # Random generate initial A matrix
-A <- rand_orthogonal(G, Q)
+A_init <- rand_orthogonal(G, Q)
 # Check A'A=I_Q constraint
 t(A) %*% A 
 # Random generate initial B matrix
-B <- matrix(rnorm(G * Q), nrow = G, ncol = Q)
+B_init <- matrix(rnorm(G * Q), nrow = G, ncol = Q)
+# Running FEFRKM algorithm
+res <- FEFRKM(
+  C = C,
+  K = K,
+  U = U_init,
+  A = A_init,
+  B = B_init,
+  lambda = lambda,
+  gamma = gamma,
+  max_iter = 1000,
+  tol = 1e-6
+)
