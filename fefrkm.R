@@ -12,27 +12,39 @@ FEFRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   #  max_iter: maximum number of iterations
   #  tol: tolerance for convergence
   #######################################################################################
-  J <- nrow(B)
+  I <- nrow(C) 
+  J <- ncol(C) 
+  G <- ncol(U) 
   Q <- ncol(B)
+  stopifnot(is.matrix(C), is.matrix(K), is.matrix(U), is.matrix(A), is.matrix(B))
+  if (!all(dim(K) == c(J, J))) stop("K must be J x J with J = ncol(C).")
+  if (!all(dim(U) == c(I, G))) stop("U must be I x G with I = nrow(C).")
+  if (!all(dim(A) == c(G, Q))) stop("A must be G x Q with G = ncol(U).")
+  if (!all(dim(B) == c(J, Q))) stop("B must be J x Q with J = ncol(C) and Q = ncol(A).")
+  if (!isTRUE(all.equal(K, t(K), tol = 1e-10))) stop("K must be symmetric.")
+  if (lambda < 0 || gamma <= 0 || tol <= 0 || max_iter < 1) stop("Invalid hyperparameters.")
+  if (any(!is.finite(C)) || any(!is.finite(K)) || any(!is.finite(U)) || any(!is.finite(A)) || any(!is.finite(B))) {
+  stop("Inputs contain NA/NaN/Inf.")
+  }
   fab <- colSums(U) 
   D <- diag(fab^(-1/2))
-  Cbar <- (D^(-2)) %*% t(U) %*% C
+  Cbar <- diag(diag(D^(-2))) %*% t(U) %*% C
   loss_function_curr <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
-  cat("Initial loss function value: ", loss_function_curr, "\n", file = "log/log.txt", append = TRUE)
+  cat("Initial loss function value: ", loss_function_curr, "\n") # file = "log/log.txt", append = TRUE)
   dif <- Inf
   iter <- 0
   while(dif > tol & iter < max_iter){
     iter <- iter + 1
     # Update U
-    cnorm2 <- rowSums(C*C) # vector of lenght I having squared norm of c_i as element
-    aBnorm2 <- rowSums((B %*% t(A))*(B %*% t(A))) # vector of lenght G having squared norm of B a_g as element
+    cnorm2 <- rowSums(C*C) # vector of lenght J having squared norm of c_i as element
+    aBnorm2 <- colSums((B %*% t(A))*(B %*% t(A))) # vector of lenght G having squared norm of B a_g as element
     distxmg2 <- outer(cnorm2,aBnorm2, "+") - 2 * (C %*% B %*% t(A)) # matrix of dimension IxG ||c_i - B a_g||^2
     fab <- exp(-distxmg2/gamma)
     U <- fab/colSums(fab)
     #######################################################################################
     # Update B
     fab <- solve(kronecker(t(A) %*% (D^2) %*% A, diag(numeric(J)+1)) + 
-      lambda*kronecker(numeric(Q)+1,K)) %*% as.vector(t(Cbar) %*% (D^2) %*% A) # Ridge regression type update for B
+      lambda*kronecker(diag(numeric(Q)+1),K)) %*% as.vector(t(Cbar) %*% (D^2) %*% A) # Ridge regression type update for B
     B <- matrix(fab, nrow = J, ncol = Q)
     #######################################################################################
     # Update A
@@ -46,6 +58,6 @@ FEFRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     loss_function_new <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
     dif <-  loss_function_new - loss_function_curr
     loss_function_curr <- loss_function_new
-    cat("Iteration: ", iter, " Loss function value: ", loss_function_curr, " Difference: ", dif, "\n", file = "log/log.txt", append = TRUE)
+    cat("Iteration: ", iter, " Loss function value: ", loss_function_curr, " Difference: ", dif, "\n") #, file = "log/log.txt", append = TRUE)
   }
 } 
