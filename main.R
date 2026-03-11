@@ -17,33 +17,31 @@ ns_obs  <- ns(
         x = x_obs,
         knots = iknots,
         intercept = TRUE)
-
+qrB <- qr(ns_obs)
+B <- qr.Q(qrB)
+T <- qr.R(qrB)
 # Focus on the height of the 39 male individuals
 # transforme into meters instead of centimeters
 Y      <- t(growth$hgtm)/100                                  
-
 # Matrix of coefficients for the natural spline basis functions for each of the 39 individuals
-C <- solve(crossprod(ns_obs))%*%crossprod(ns_obs, t(Y)) 
-
+C <- solve(crossprod(B))%*%crossprod(B, t(Y)) 
 # Plotting the natural spline basis functions and the fitted curves
 x_grid <- seq.int(1, 18, .05)
 ns_grid <- ns(
         x = x_grid, 
         knots = iknots,
         intercept = TRUE)
+Bgrid <- ns_grid %*% solve(T) 
 matplot(
-  x_grid, ns_grid,
+  x_grid, Bgrid,
   type = "l", lty = 1, lwd = 2,
   xlab = "Age", ylab = "Basis value",
   main = "Natural Spline Basis Functions")
-
-yhat   <- ns_grid %*% C
-
+yhat   <- Bgrid %*% C
 matplot(x_obs, Y[1,], ty="b", lty=1, col = "grey",
         xlab = "Age",
         ylab = "Height (cm)")
 matlines(x_grid, yhat[,1], col = "darkred")
-
 # Hyperparameters of the FEFRKM algorithm
 lambda <- 1
 gamma  <- 1
@@ -51,9 +49,9 @@ G <- 3
 Q <- 2
 I <- nrow(Y)
 J <- ncol(ns_obs)
-
 # Building matrix K
 K <- kspline(x_obs) # internal knots or full grid?
+Korth <- solve(T) %*% K %*% t(solve(T)) # Orthogonalized version of K
 # Trasposing matrix C
 C <- t(C)
 # Random generate initial U matrix
@@ -67,7 +65,7 @@ B_init <- matrix(rnorm(J * Q), nrow = J, ncol = Q)
 # Running FEFRKM algorithm
 res <- FEFRKM(
   C = C,
-  K = K,
+  K = Korth,
   U = U_init,
   A = A_init,
   B = B_init,
@@ -76,4 +74,3 @@ res <- FEFRKM(
   max_iter = 1000,
   tol = 1e-6
 )
-# Debug the function
