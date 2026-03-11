@@ -18,13 +18,16 @@ ns_obs  <- ns(
         knots = iknots,
         intercept = TRUE)
 qrNS <- qr(ns_obs)
-ns_orth <- qr.Q(qrNS)
-R <- qr.R(qrNS)
+ns_orth <- qr.Q(qrNS) # Orthogonalized version of the natural spline basis functions
+R <- qr.R(qrNS) # Upper triangular matrix from the QR decomposition
+
 # Focus on the height of the 39 male individuals
 # transforme into meters instead of centimeters
-Y      <- t(growth$hgtm)/100                                  
+Y      <- t(growth$hgtm)/100           
+
 # Matrix of coefficients for the natural spline basis functions for each of the 39 individuals
 C <- solve(crossprod(ns_orth))%*%crossprod(ns_orth, t(Y)) 
+
 # Plotting the natural spline basis functions and the fitted curves
 x_grid <- seq.int(1, 18, .05)
 ns_grid <- ns(
@@ -42,6 +45,7 @@ matplot(x_obs, Y[1,], ty="b", lty=1, col = "grey",
         xlab = "Age",
         ylab = "Height (cm)")
 matlines(x_grid, yhat[,1], col = "darkred")
+
 # Hyperparameters of the FEFRKM algorithm
 lambda <- 1
 gamma  <- 1
