@@ -17,27 +17,27 @@ ns_obs  <- ns(
         x = x_obs,
         knots = iknots,
         intercept = TRUE)
-qrB <- qr(ns_obs)
-B <- qr.Q(qrB)
-T <- qr.R(qrB)
+qrNS <- qr(ns_obs)
+ns_orth <- qr.Q(qrNS)
+R <- qr.R(qrNS)
 # Focus on the height of the 39 male individuals
 # transforme into meters instead of centimeters
 Y      <- t(growth$hgtm)/100                                  
 # Matrix of coefficients for the natural spline basis functions for each of the 39 individuals
-C <- solve(crossprod(B))%*%crossprod(B, t(Y)) 
+C <- solve(crossprod(ns_orth))%*%crossprod(ns_orth, t(Y)) 
 # Plotting the natural spline basis functions and the fitted curves
 x_grid <- seq.int(1, 18, .05)
 ns_grid <- ns(
         x = x_grid, 
         knots = iknots,
         intercept = TRUE)
-Bgrid <- ns_grid %*% solve(T) 
+ns_orth_grid <- ns_grid %*% solve(R) 
 matplot(
-  x_grid, Bgrid,
+  x_grid, ns_orth_grid,
   type = "l", lty = 1, lwd = 2,
   xlab = "Age", ylab = "Basis value",
   main = "Natural Spline Basis Functions")
-yhat   <- Bgrid %*% C
+yhat   <- ns_orth_grid %*% C
 matplot(x_obs, Y[1,], ty="b", lty=1, col = "grey",
         xlab = "Age",
         ylab = "Height (cm)")
@@ -51,7 +51,7 @@ I <- nrow(Y)
 J <- ncol(ns_obs)
 # Building matrix K
 K <- kspline(x_obs) # internal knots or full grid?
-Korth <- solve(T) %*% K %*% t(solve(T)) # Orthogonalized version of K
+Korth <- solve(R) %*% K %*% t(solve(R)) # Orthogonalized version of K
 # Trasposing matrix C
 C <- t(C)
 # Random generate initial U matrix
