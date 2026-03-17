@@ -39,11 +39,11 @@ U_init <- randgenuf(I,G)
 A_init <- rand_orthogonal(G,Q)
 B_init <- t(t(A)%*%solve(t(U)%*%U)%*%t(U)%*%X)
 lambda <- 10
-gamma <- 1
+gamma <- 0.1
 max_iter <- Inf
 tol <- 1e-6
 # Run FEFRKM algorithm
 res <- FEFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
 # Check results 
 # A%*%t(B) should be close to res$A%*%t(res$B)
-mean((A %*% t(B) - res$A %*% t(res$B))^2) # should be small
+mean(abs(A %*% t(B) - res$A %*% t(res$B))) # should be small

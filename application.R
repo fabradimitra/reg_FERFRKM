@@ -54,7 +54,7 @@ Korth <- solve(R) %*% K %*% t(solve(R)) # Orthogonalized version of K
 # Trasposing matrix C
 C <- t(C)
 # Random generate initial U matrix
-U_init <- randgenu(I, G)
+U_init <- randgenuf(I, G)
 # Random generate initial A matrix
 A_init <- rand_orthogonal(G, Q)
 # Check A'A=I_Q constraint
