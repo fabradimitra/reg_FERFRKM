@@ -46,11 +46,11 @@ FEFRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     D2 <- D^2
     Cbar <- diag(1/diag(D2)) %*% t(U) %*% C
     B <- solve(kronecker(t(A) %*% (D2) %*% A, IJ) + lambda*IQkK) %*% c(t(Cbar) %*% D2 %*% A) # Ridge regression type update for B
-    B <- matrix(fab, nrow = J, ncol = Q)
+    B <- matrix(B, nrow = J, ncol = Q)
     #######################################################################################
     # Update A
     Fab <- kronecker(D2,t(B) %*% B)
-    alpha_max <- max(eigen(FAB, symmetric = TRUE, only.values = TRUE)$values) # maximum eigenvalue to be inserted in Kiers maj. method
+    alpha_max <- max(eigen(Fab, symmetric = TRUE, only.values = TRUE)$values) # maximum eigenvalue to be inserted in Kiers maj. method
     matr_kiers <- A + (D2 %*% Cbar %*% B - D2 %*% A %*% t(B) %*% B)/alpha_max # matrix of Kiers maj. method
     S <- svd(matr_kiers)
     A <- S$u %*% t(S$v)
