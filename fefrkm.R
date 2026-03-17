@@ -26,37 +26,38 @@ FEFRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   if (any(!is.finite(C)) || any(!is.finite(K)) || any(!is.finite(U)) || any(!is.finite(A)) || any(!is.finite(B))) {
   stop("Inputs contain NA/NaN/Inf.")
   }
-  fab <- colSums(U) 
-  D <- diag(fab^(-1/2))
-  Cbar <- diag(diag(D^(-2))) %*% t(U) %*% C
-  loss_function_curr <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
-  cat("Initial loss function value: ", loss_function_curr, "\n") # file = "log/log.txt", append = TRUE)
+  cnorm2 <- rowSums(C*C) # vector of lenght J having squared norm of c_i as element
+  IJ <- diag(J)
+  IQkK <- kronecker(diag(Q),K)
+  loss_function_curr <- Inf
   dif <- Inf
   iter <- 0
   while(dif > tol & iter < max_iter){
     iter <- iter + 1
     # Update U
-    cnorm2 <- rowSums(C*C) # vector of lenght J having squared norm of c_i as element
-    aBnorm2 <- colSums((B %*% t(A))*(B %*% t(A))) # vector of lenght G having squared norm of B a_g as element
-    distxmg2 <- outer(cnorm2,aBnorm2, "+") - 2 * (C %*% B %*% t(A)) # matrix of dimension IxG ||c_i - B a_g||^2
-    fab <- exp(-distxmg2/gamma)
-    U <- fab/colSums(fab)
+    BAp <- B %*% t(A)
+    aBnorm2 <- colSums(BAp*BAp) # vector of lenght G having squared norm of B a_g as element
+    distxmg2 <- outer(cnorm2,aBnorm2, "+") - 2 * (C %*% BAp) # matrix of dimension IxG ||c_i - B a_g||^2
+    U <- exp(-distxmg2/gamma)
+    U <- U/matrix(rowSums(U),I,G)
     #######################################################################################
     # Update B
-    fab <- solve(kronecker(t(A) %*% (D^2) %*% A, diag(numeric(J)+1)) + 
-      lambda*kronecker(diag(numeric(Q)+1),K)) %*% as.vector(t(Cbar) %*% (D^2) %*% A) # Ridge regression type update for B
+    D <- diag(sqrt(colSums(U)))
+    D2 <- D^2
+    Cbar <- diag(1/diag(D2)) %*% t(U) %*% C
+    B <- solve(kronecker(t(A) %*% (D2) %*% A, IJ) + lambda*IQkK) %*% c(t(Cbar) %*% D2 %*% A) # Ridge regression type update for B
     B <- matrix(fab, nrow = J, ncol = Q)
     #######################################################################################
     # Update A
-    FAB <- kronecker(D^2,t(B) %*% B)
+    Fab <- kronecker(D2,t(B) %*% B)
     alpha_max <- max(eigen(FAB, symmetric = TRUE, only.values = TRUE)$values) # maximum eigenvalue to be inserted in Kiers maj. method
-    matr_kiers <- A + ((D^2) %*% Cbar %*% B - (D^2) %*% A %*% t(B) %*% B)/alpha_max # matrix of Kiers maj. method
+    matr_kiers <- A + (D2 %*% Cbar %*% B - D2 %*% A %*% t(B) %*% B)/alpha_max # matrix of Kiers maj. method
     S <- svd(matr_kiers)
     A <- S$u %*% t(S$v)
     #######################################################################################
     # Compute loss function and check convergence
     loss_function_new <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
-    dif <-  loss_function_new - loss_function_curr
+    dif <-  loss_function_curr - loss_function_new
     loss_function_curr <- loss_function_new
     cat("Iteration: ", iter, " Loss function value: ", loss_function_curr, " Difference: ", dif, "\n") #, file = "log/log.txt", append = TRUE)
   }
