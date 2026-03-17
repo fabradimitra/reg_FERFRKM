@@ -4,7 +4,7 @@ source("rand_orthogonal.R")
 source("loss_function.R")
 source("FEFRKM.R")
 # Simulated data example
-set.seed(5)
+set.seed(200)
 I <-100; J <- 30; Q <- 2; G <- 3
 X <- matrix(rnorm(I*J),I,J)
 K <- kspline(1:J)
