@@ -61,4 +61,5 @@ FEFRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     loss_function_curr <- loss_function_new
     cat("Iteration: ", iter, " Loss function value: ", loss_function_curr, " Difference: ", dif, "\n") #, file = "log/log.txt", append = TRUE)
   }
+  return(list(U = U, A = A, B = B, loss_function = loss_function_curr, iterations = iter))
 } 
