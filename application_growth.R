@@ -1,7 +1,5 @@
 library(fda)
 library(splines2)
-
-# Loading data growth
 data(growth)
 with(growth, matplot(age, hgtf[, 1:10], type="b"))
 
