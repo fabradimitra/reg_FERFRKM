@@ -1,4 +1,4 @@
-FEFRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
+FERFRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   # This function implements the FEFRKM algorithm for fuzzy functional data clustering.
   # Inputs:
   #  C: (I x J) coefficients for the natural cubic spline basis functions for each individual i

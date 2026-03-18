@@ -62,7 +62,7 @@ t(A_init) %*% A_init
 # Random generate initial B matrix
 B_init <- matrix(rnorm(J * Q), nrow = J, ncol = Q)
 # Running FEFRKM algorithm
-res <- FEFRKM(
+res <- FERFRKM(
   C = C,
   K = Korth,
   U = U_init,

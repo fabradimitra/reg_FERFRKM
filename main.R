@@ -3,7 +3,7 @@ source("randgenuf.R")
 source("randgenuc.R")
 source("rand_orthogonal.R")
 source("loss_function.R")
-source("FEFRKM.R")
+source("FERFRKM.R")
 # Simulated data to check if the model reconstruct the data generating process
 set.seed(42)
 I <- 100
@@ -21,7 +21,7 @@ B <- matrix(rnorm(J * Q), nrow = J, ncol = Q)
 E <- matrix(rnorm(I * J, sd = var.err), nrow = I, ncol = J)
 # Compute the data matrix X
 X <- U %*% A %*% t(B) + E
-# Set-up for FEFRKM algorithm
+# Set-up for FERFRKM algorithm
 K <- kspline(1:J)
 lambda <- 1
 gamma <- 1
@@ -35,8 +35,8 @@ U_init[cbind(seq_len(I), kmeans_res$cluster)] <- 1L
 SVD <- svd(diag(1/colSums(U_init)) %*% t(U_init) %*% X)
 A_init <- SVD$u[, 1:Q]
 B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
-# Run FEFRKM algorithm
-res <- FEFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
+# Run FERFRKM algorithm
+res <- FERFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
 # Check results 
 mean(abs(A %*% t(B) - res$A %*% t(res$B))) # A B'= A_hat B_hat' should be small
 # Random starts
@@ -50,8 +50,8 @@ for (i in seq_len(n_starts)) {
     # Initialization of A and B
     A_init <- rand_orthogonal(G, Q)
     B_init <- t(t(A_init)%*%solve(t(U_init)%*%U_init)%*%t(U_init)%*%X)
-    # Run FEFRKM algorithm
-    results[[i]] <- FEFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
+    # Run FERFRKM algorithm
+    results[[i]] <- FERFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
     # Compute discrepancy
     discrepancies[i] <- mean(abs(A %*% t(B) - results[[i]]$A %*% t(results[[i]]$B)))
 }
