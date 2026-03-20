@@ -1,3 +1,4 @@
+library(mclust)
 source("kspline.R")
 source("randgenuf.R")
 source("randgenuc.R")
@@ -10,9 +11,11 @@ I <- 100
 J <- 30
 Q <- 3
 G <- 4
-var.err <- 0.1
+var.err <- 0.0001
 # Generate U crisp
 U <- randgenuc(I, G)
+# U: I x G fuzzy memberships
+cluster_id <- max.col(U, ties.method = "first")
 # Generate A orthogonal
 A <- rand_orthogonal(G, Q)
 # Generate B
@@ -37,12 +40,18 @@ A_init <- SVD$u[, 1:Q]
 B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
 # Run FERFRKM algorithm
 res <- FERFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
-# Check results 
-mean(abs(A %*% t(B) - res$A %*% t(res$B))) # A B'= A_hat B_hat' should be small
+# Check res:
+# A B'= A_hat B_hat'
+ABp <- A %*% t(B)
+sum((ABp - res$A %*% t(res$B))^2)/sum(ABp^2) 
+# Adjusted Rand Index between true cluster and estimated cluster
+cluster_id_est <- max.col(res$U, ties.method = "first")
+adjustedRandIndex(cluster_id, cluster_id_est)
 # Random starts
 n_starts <- 10
-results <- vector("list", n_starts)
-discrepancies <- numeric(n_starts)
+res <- vector("list", n_starts)
+errors <- numeric(n_starts)
+adjusted_rand_indices <- numeric(n_starts)
 for (i in seq_len(n_starts)) {
     set.seed(42 + i) # Different seed for each start
     # Random initialization of U
@@ -51,10 +60,14 @@ for (i in seq_len(n_starts)) {
     A_init <- rand_orthogonal(G, Q)
     B_init <- t(t(A_init)%*%solve(t(U_init)%*%U_init)%*%t(U_init)%*%X)
     # Run FERFRKM algorithm
-    results[[i]] <- FERFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
+    res[[i]] <- FERFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
     # Compute discrepancy
-    discrepancies[i] <- mean(abs(A %*% t(B) - results[[i]]$A %*% t(results[[i]]$B)))
+    errors[i] <- sum((A %*% t(B) - res[[i]]$A %*% t(res[[i]]$B))^2)/sum((A %*% t(B))^2)
+    # Compute Adjusted Rand Index
+    cluster_id_est <- max.col(res[[i]]$U, ties.method = "first")
+    adjusted_rand_indices[i] <- adjustedRandIndex(cluster_id, cluster_id_est)
 }
-discrepancies
+errors
+adjusted_rand_indices
 
   
