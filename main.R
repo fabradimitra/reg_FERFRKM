@@ -1,4 +1,5 @@
 library(mclust)
+library(splines)
 source("kspline.R")
 source("randgenuf.R")
 source("randgenuc.R")
@@ -25,7 +26,14 @@ E <- matrix(rnorm(I * J, sd = var.err), nrow = I, ncol = J)
 # Compute the data matrix X
 X <- U %*% A %*% t(B) + E
 # Set-up for FERFRKM algorithm
-K <- kspline(1:J)
+grid <- 1:J
+K <- kspline(grid)
+#basis <- ns(
+#  grid,
+#  knots = 2:(J-1),
+#  Boundary.knots = c(1, J)
+#)
+#W <- basis %*% t(basis)
 lambda <- 1
 gamma <- 1
 max_iter <- Inf
