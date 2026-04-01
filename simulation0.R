@@ -78,4 +78,8 @@ for (i in seq_len(n_starts)) {
 errors
 adjusted_rand_indices
 
+# Permute the estimated centroids to match the true centroids
+#cost <- as.matrix(dist(t(res$U), t(U), method = "euclidean"))
+#perm <- solve_LSAP(cost)
+#ABp_perm <- (res$A %*% t(res$B))[as.integer(perm),1:J]
   
