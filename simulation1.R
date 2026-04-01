@@ -1,0 +1,104 @@
+library(mclust)
+library(splines)
+source("kspline.R")
+source("randgenuf.R")
+source("randgenuc.R")
+source("rand_orthogonal.R")
+source("loss_function.R")
+source("FERFRKM.R")
+#
+I <- 150
+J <- 100
+Q <- 2
+G <- 4
+var.err <- 0.2
+# smooth smooth
+psi1_smooth <- function(t) {
+  t + sin(pi * t) * exp(-t)
+}
+psi2_smooth <- function(t) {
+  cos(3 + pi * t)
+}
+# True A matrix (orthogonal)
+A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
+# Plotting centroids
+t_grid <- seq(0, 1, length.out = J)
+f1 <- psi1_smooth(t_grid)
+f2 <- psi2_smooth(t_grid)
+# 4 linear combinations: A[i,1]*f1 + A[i,2]*f2
+curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
+matplot(
+  t_grid, curves, type = "l", lwd = 2,
+  col = c("red", "blue", "darkgreen", "orange"),
+  xlab = "t", ylab = "A %*% [psi1, psi2]"
+)
+legend(
+  "topright",
+  legend = paste0("row ", 1:4),
+  col = c("red", "blue", "darkgreen", "orange"),
+  lwd = 2, bty = "n"
+)
+# Generate U crisp
+U <- randgenuc(I, G)
+# U: I x G fuzzy memberships
+cluster_id <- max.col(U, ties.method = "first")
+# Generate B
+B <- matrix(rnorm(J * Q), nrow = J, ncol = Q) 
+# Generate the error
+E <- matrix(rnorm(I * J, sd = var.err), nrow = I, ncol = J)
+# Compute the data matrix X
+X <- U %*% A %*% t(B) + E
+# Set-up for FERFRKM algorithm
+grid <- 1:J
+K <- kspline(grid)
+#basis <- ns(
+#  grid,
+#  knots = 2:(J-1),
+#  Boundary.knots = c(1, J)
+#)
+#W <- basis %*% t(basis)
+lambda <- 1
+gamma <- 1
+max_iter <- Inf
+tol <- 1e-6
+# K-means initialization of U
+kmeans_res <- kmeans(X, G, nstart = 10)
+U_init <- matrix(0, nrow = I, ncol = G)
+U_init[cbind(seq_len(I), kmeans_res$cluster)] <- 1L
+# PCA initialization of A and B
+SVD <- svd(diag(1/colSums(U_init)) %*% t(U_init) %*% X)
+A_init <- SVD$u[, 1:Q]
+B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
+# Run FERFRKM algorithm
+res <- FERFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
+# Check res:
+# A B'= A_hat B_hat'
+ABp <- A %*% t(B)
+sum((ABp - res$A %*% t(res$B))^2)/sum(ABp^2) 
+# Adjusted Rand Index between true cluster and estimated cluster
+cluster_id_est <- max.col(res$U, ties.method = "first")
+adjustedRandIndex(cluster_id, cluster_id_est)
+# Random starts
+n_starts <- 10
+res <- vector("list", n_starts)
+errors <- numeric(n_starts)
+adjusted_rand_indices <- numeric(n_starts)
+for (i in seq_len(n_starts)) {
+    set.seed(42 + i) # Different seed for each start
+    # Random initialization of U
+    U_init <- randgenuc(I, G)
+    # Initialization of A and B
+    A_init <- rand_orthogonal(G, Q)
+    B_init <- t(t(A_init)%*%solve(t(U_init)%*%U_init)%*%t(U_init)%*%X)
+    # Run FERFRKM algorithm
+    res[[i]] <- FERFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
+    # Compute discrepancy
+    errors[i] <- sum((A %*% t(B) - res[[i]]$A %*% t(res[[i]]$B))^2)/sum((A %*% t(B))^2)
+    # Compute Adjusted Rand Index
+    cluster_id_est <- max.col(res[[i]]$U, ties.method = "first")
+    adjusted_rand_indices[i] <- adjustedRandIndex(cluster_id, cluster_id_est)
+}
+errors
+adjusted_rand_indices
+
+  
