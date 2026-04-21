@@ -37,7 +37,7 @@ f2 <- psi2_wiggly(t_grid)
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 K <- kspline(t_grid)
 # Hyperparameters for FERFRKM
-lambda <- 0.0001
+lambda <- 0.1
 gamma <- 1
 max_iter <- Inf
 tol <- 1e-6
@@ -87,6 +87,7 @@ mean(sSqErrors)
 # Plot the centroids and their reconstruction
 tt <- seq(min(t_grid), max(t_grid), length.out = 400)
 Ym <- apply(t(curves), 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+par(mfrow = c(1,2))
 matplot(
   tt, Ym, type = "l", lwd = 1, lty = 1,
   col = c("red","blue","darkgreen","orange"),
