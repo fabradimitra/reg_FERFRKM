@@ -7,6 +7,7 @@ source("randgenuc.R")
 source("rand_orthogonal.R")
 source("loss_function.R")
 source("FERFRKM.R")
+source("FESRKM.R")
 source("perm_hungarian_fast.R")
 # Simulation parameters
 I <- 150
@@ -31,16 +32,16 @@ psi2_wiggly <- function(t) {
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(0.1, 1, length.out = J)
-f1 <- psi1_wiggly(t_grid)
-f2 <- psi2_wiggly(t_grid)
+f1 <- psi1_smooth(t_grid)
+f2 <- psi2_smooth(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 K <- kspline(t_grid)
 # Hyperparameters for FERFRKM
-lambda <- 0.1
+lambda <- 1
 gamma <- 1
 max_iter <- Inf
-tol <- 1e-6
+tol <- 1e-2
 random_init <- FALSE
 adjustedRandIndices <- numeric(250)
 sSqErrors <- numeric(250)
@@ -72,7 +73,7 @@ for(iter in c(1:250)){
     B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
   }
   # Run FERFRKM algorithm
-  res <- FERFRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
+  res <- FESRKM(X, K, U_init, A_init, B_init, lambda, gamma, max_iter, tol)
   cluster_labels_est <- max.col(res$U, ties.method = "first")
   adjustedRandIndices[iter] <- adjustedRandIndex(cluster_labels,cluster_labels_est)
   ABp <- res$A %*% t(res$B)
