@@ -41,7 +41,7 @@ K <- kspline(t_grid)
 lambda <- 1
 gamma <- 1
 max_iter <- Inf
-tol <- 1e-2
+tol <- 1e-6
 random_init <- FALSE
 adjustedRandIndices <- numeric(250)
 sSqErrors <- numeric(250)
