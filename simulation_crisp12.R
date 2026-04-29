@@ -32,15 +32,15 @@ psi2_wiggly <- function(t) {
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(0.1, 1, length.out = J)
-f1 <- psi1_smooth(t_grid)
-f2 <- psi2_smooth(t_grid)
+f1 <- psi1_wiggly(t_grid)
+f2 <- psi2_wiggly(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 K <- kspline(t_grid)
 # Hyperparameters for FERFRKM
-lambda <- 1
+lambda <- 0.00001
 gamma <- 1
-max_iter <- Inf
+max_iter <- 100
 tol <- 1e-6
 random_init <- FALSE
 adjustedRandIndices <- numeric(250)

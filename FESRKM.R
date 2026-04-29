@@ -28,6 +28,7 @@ FESRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   }
   cnorm2 <- rowSums(C*C) # vector of lenght J having squared norm of c_i as element
   IJ <- diag(J)
+  IGQ <- diag(G*Q)
   IQkK <- kronecker(diag(Q),K)
   loss_function_curr <- Inf
   dif <- Inf
@@ -49,14 +50,22 @@ FESRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     B <- matrix(B, nrow = J, ncol = Q)
     #######################################################################################
     # Update A
-    A <- Cbar %*% B %*% solve(t(B) %*% B) # OLS type update for A
+    # Constraint to have norm 1
+    vD2CbarB <- c(D2%*%Cbar%*%B)
+    BBpkrD2 <- kronecker(t(B) %*% B,D2)
+    M <- rbind(cbind(-BBpkrD2,vD2CbarB%*%t(vD2CbarB)),cbind(IGQ,-BBpkrD2))
+    ev <- eigen(M)$values
+    mu <- Re(ev[which.max(Re(ev))])
+    A <- solve(BBpkrD2+mu*IGQ)%*%vD2CbarB # Ridge regression type update for A
+    A <- matrix(A, nrow = G, ncol = Q)
     #######################################################################################
     # Compute loss function and check convergence
     loss_function_new <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
     dif <-  loss_function_curr - loss_function_new
     loss_function_curr <- loss_function_new
     cat("Iteration: ", iter, " Loss function value: ", loss_function_curr, 
-    " Difference: ", dif, " Norm B: ", norm(B, type = "F"), "\n") #, file = "log/log.txt", append = TRUE)
+    " Difference: ", dif, " Norm B: ", norm(B, type = "F"), 
+    " Norm A: ", norm(A, type = "F"), "\n") #, file = "log/log.txt", append = TRUE)
   }
   return(list(U = U, A = A, B = B, loss_function = loss_function_curr, iterations = iter))
 }
