@@ -1,4 +1,4 @@
-FESRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
+FESRKM <- function(C,K,Pk,Lk,U,A,B,lambda=-1,gamma,max_iter = Inf,tol = 1e-6){
   # This function implements the FESRKM algorithm for fuzzy functional data clustering.
   # Inputs:
   #  C: (I x J) coefficients for the natural cubic spline basis functions for each individual i
@@ -22,10 +22,18 @@ FESRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   if (!all(dim(A) == c(G, Q))) stop("A must be G x Q with G = ncol(U).")
   if (!all(dim(B) == c(J, Q))) stop("B must be J x Q with J = ncol(C) and Q = ncol(A).")
   if (!isTRUE(all.equal(K, t(K), tol = 1e-10))) stop("K must be symmetric.")
-  if (lambda < 0 || gamma <= 0 || tol <= 0 || max_iter < 1) stop("Invalid hyperparameters.")
+  if (lambda != -1 & lambda <= 0) stop("lambda must be non-negative or equal to -1.")
+  if (gamma <= 0 || tol <= 0 || max_iter < 1) stop("Invalid hyperparameters.")
   if (any(!is.finite(C)) || any(!is.finite(K)) || any(!is.finite(U)) || any(!is.finite(A)) || any(!is.finite(B))) {
   stop("Inputs contain NA/NaN/Inf.")
   }
+  nested_lam <- FALSE
+  if(lambda == -1){
+    nested_lam <- TRUE
+    lambda <- 1
+  }
+  laminf <- 0
+  lamup <- 1
   cnorm2 <- rowSums(C*C) # vector of lenght J having squared norm of c_i as element
   IJ <- diag(J)
   IGQ <- diag(G*Q)
@@ -59,6 +67,31 @@ FESRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     A <- solve(BBpkrD2+mu*IGQ)%*%vD2CbarB # Ridge regression type update for A
     A <- matrix(A, nrow = G, ncol = Q)
     #######################################################################################
+    # Update lambda if nested optimization is desired
+    if(nested_lam & iter %% 10 == 0){
+      # Compute the optimal lambda using GCV or another criterion
+      CbarpD <- (Pk%*%t(Cbar)) %*% D # Is it correct? 
+      snormCbarpD <- sum(CbarpD * CbarpD)
+      DA <- D %*% A
+      SVD=svd(DA,nu=(min(nrow(DA),ncol(DA))),nv=(min(nrow(DA),ncol(DA)))) 
+      Pda<-SVD$u
+      Lda<-SVD$d
+      Qda<-SVD$v
+      CbarpDP <- CbarpD %*% Pda
+      lmsk <- outer(diag(Lk),Lda^(-2))
+      lambda <- optimise(fungcv, c(laminf,lamup),
+                lmsk=lmsk, snormCbarpD=snormCbarpD,
+                CbarpDP=CbarpDP, G=G, J=J, maximum = FALSE)$minimum
+      # Compute loss function and check convergence
+      loss_function_new <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
+      dif <-  loss_function_curr - loss_function_new
+      loss_function_curr <- loss_function_new
+      dif <- tol + 1 # to ensure the loop continues until the next check
+      cat("Iteration: ", iter, " Loss function value: ", loss_function_curr, 
+      " Lambda updated to ", lambda, "\n") #, file = "log/log.txt", append = TRUE)
+      next
+    }
+    #######################################################################################
     # Compute loss function and check convergence
     loss_function_new <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
     dif <-  loss_function_curr - loss_function_new
@@ -67,5 +100,5 @@ FESRKM <- function(C,K,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     " Difference: ", dif, " Norm B: ", norm(B, type = "F"), 
     " Norm A: ", norm(A, type = "F"), "\n") #, file = "log/log.txt", append = TRUE)
   }
-  return(list(U = U, A = A, B = B, loss_function = loss_function_curr, iterations = iter))
+  return(list(U = U, A = A, B = B, lambda=lambda, loss_function = loss_function_curr, iterations = iter))
 }

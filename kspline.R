@@ -19,6 +19,10 @@ for (j in 2:(T-1)) {
       R[i,i-1]=h[i]/6 
     }
   R[T-2,T-2]=(h[T-2]+h[T-1])/3;
-  K<-Q%*%solve(R)%*%t(Q)    
-  return(K)
+  K<-Q%*%solve(R)%*%t(Q)
+  SVD<-svd(K)
+  Lk<-diag(SVD$d)
+  Pk<-SVD$v
+    
+return(list(K=K,Pk=Pk,Lk=Lk))
 }
