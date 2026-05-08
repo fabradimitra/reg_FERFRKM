@@ -1,4 +1,4 @@
-FESRKM <- function(C,K,Pk,Lk,U,A,B,lambda=-1,gamma,max_iter = Inf,tol = 1e-6){
+FESRKM_eqpen <- function(C,K,Pk,Lk,U,A,B,lambda=-1,gamma,max_iter = Inf,tol = 1e-6){
   # This function implements the FESRKM algorithm for fuzzy functional data clustering.
   # Inputs:
   #  C: (I x J) coefficients for the natural cubic spline basis functions for each individual i

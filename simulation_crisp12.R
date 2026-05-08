@@ -6,7 +6,7 @@ source("randgenuf.R")
 source("randgenuc.R")
 source("rand_orthogonal.R")
 source("loss_function.R")
-source("FESRKM.R")
+source("FESRKM_idpen.R")
 source("fungcv.R")
 source("perm_hungarian_fast.R")
 # Simulation parameters
@@ -41,9 +41,9 @@ K <- res$K
 Pk <- res$Pk
 Lk <- res$Lk
 # Hyperparameters for FERFRKM
-lambda <- -1
+lambda <- 0.0001
 gamma <- 1
-max_iter <- Inf
+max_iter <- 5000
 tol <- 1e-6
 random_init <- FALSE
 adjustedRandIndices <- numeric(250)
@@ -76,17 +76,17 @@ for(iter in c(1:250)){
     B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
   }
   # Run FERFRKM algorithm
-  res <- FESRKM(C=X,
-                K=K,
-                Pk=Pk,
-                Lk=Lk,
-                U=U_init,
-                A=A_init,
-                B=B_init,
-                lambda=lambda,
-                gamma = gamma,
-                max_iter = max_iter,
-                tol = tol)
+  res <- FESRKM_idpen(C=X,
+                      K=K,
+                      Pk=Pk,
+                      Lk=Lk,
+                      U=U_init,
+                      A=A_init,
+                      B=B_init,
+                      lambda=lambda,
+                      gamma = gamma,
+                      max_iter = max_iter,
+                      tol = tol)
   cluster_labels_est <- max.col(res$U, ties.method = "first")
   adjustedRandIndices[iter] <- adjustedRandIndex(cluster_labels,cluster_labels_est)
   ABp <- res$A %*% t(res$B)
