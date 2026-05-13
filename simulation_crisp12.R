@@ -6,7 +6,7 @@ source("randgenuf.R")
 source("randgenuc.R")
 source("rand_orthogonal.R")
 source("loss_function.R")
-source("FESRKM_npen_roww.R")
+source("FESRKM_idpen.R")
 source("fungcv.R")
 source("perm_hungarian_fast.R")
 # Simulation parameters
@@ -33,7 +33,7 @@ A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(0.1, 1, length.out = J)
 f1 <- psi1_wiggly(t_grid)
-f2 <- psi2_smooth(t_grid)
+f2 <- psi2_wiggly(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -41,11 +41,11 @@ K <- res$K
 Pk <- res$Pk
 Lk <- res$Lk
 # Hyperparameters for FERFRKM
-lambda <- 0.001
+lambda <- 0.0000001
 gamma <- 1
-max_iter <- Inf
+max_iter <- 5000
 tol <- 1e-6
-random_init <- TRUE
+random_init <- FALSE
 adjustedRandIndices <- numeric(250)
 sSqErrors <- numeric(250)
 # Simulation loop
@@ -77,17 +77,17 @@ for(iter in c(1:250)){
     B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
   }
   # Run FERFRKM algorithm
-  res <- FESRKM_npen_roww(C=X,
-                          K=K,
-                          Pk=Pk,
-                          Lk=Lk,
-                          U=U_init,
-                          A=A_init,
-                          B=B_init,
-                          lambda=lambda,
-                          gamma = gamma,
-                          max_iter = max_iter,
-                          tol = tol)
+  res <- FESRKM_idpen(C=X,
+                      K=K,
+                      Pk=Pk,
+                      Lk=Lk,
+                      U=U_init,
+                      A=A_init,
+                      B=B_init,
+                      lambda=lambda,
+                      gamma = gamma,
+                      max_iter = max_iter,
+                      tol = tol)
   cluster_labels_est <- max.col(res$U, ties.method = "first")
   adjustedRandIndices[iter] <- adjustedRandIndex(cluster_labels,cluster_labels_est)
   ABp <- res$A %*% t(res$B)
