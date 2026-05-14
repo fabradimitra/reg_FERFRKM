@@ -1,4 +1,4 @@
-FESRKM_npen_roww <- function(C,K,Pk,Lk,U,A,B,lambda=-1,gamma,max_iter = Inf,tol = 1e-6){
+FERFRKM_Aupid <- function(C,K,Pk,Lk,U,A,B,lambda=-1,gamma,max_iter = Inf,tol = 1e-6){
   # This function implements the FESRKM algorithm for fuzzy functional data clustering.
   # Inputs:
   #  C: (I x J) coefficients for the natural cubic spline basis functions for each individual i
@@ -36,9 +36,9 @@ FESRKM_npen_roww <- function(C,K,Pk,Lk,U,A,B,lambda=-1,gamma,max_iter = Inf,tol 
   lamup <- 1
   cnorm2 <- rowSums(C*C) # vector of lenght J having squared norm of c_i as element
   IJ <- diag(J)
-  IQ <- diag(Q)
   IGQ <- diag(G*Q)
-  IQkK <- kronecker(IQ,K)
+  IQ <- diag(Q)
+  IQkK <- kronecker(diag(Q),K)
   loss_function_curr <- Inf
   dif <- Inf
   iter <- 0
@@ -50,7 +50,7 @@ FESRKM_npen_roww <- function(C,K,Pk,Lk,U,A,B,lambda=-1,gamma,max_iter = Inf,tol 
     distxmg2 <- outer(cnorm2,aBnorm2, "+") - 2 * (C %*% BAp) # matrix of dimension IxG ||c_i - B a_g||^2
     U <- exp(-distxmg2/gamma)
     U <- U/matrix(rowSums(U),I,G)
-    U[U<1e-12]<-1e-12
+    U[U<1e-12] <- 1e-12
     #######################################################################################
     # Update B
     D <- diag(sqrt(colSums(U)))
@@ -60,16 +60,18 @@ FESRKM_npen_roww <- function(C,K,Pk,Lk,U,A,B,lambda=-1,gamma,max_iter = Inf,tol 
     B <- matrix(B, nrow = J, ncol = Q)
     #######################################################################################
     # Update A
-    # Each row of A is constrained to have norm 1
-    BpB <- t(B) %*% B
-    for(g in c(1:G)){
-      cgpcg <- outer(Cbar[g,],Cbar[g,])
-      upperRightM <- t(B)%*%cgpcg%*%B
-      M <- rbind(cbind(-BpB,upperRightM),cbind(IQ,-BpB))
-      ev <- eigen(M)$values
-      mu <- Re(ev[which.max(Re(ev))])
-      A[g,] <- solve(BpB+mu*IQ)%*%t(B)%*%Cbar[g,] # Ridge regression type update for A
+    # Constraint to have upper QxQ block equal to identity
+    colBkrD <- numeric(J*G)
+    redBkrD <- kronecker(B,D)
+    idx_BkrD_toremove <- c()
+    for(i in c(1:Q)){
+      colBkrD <- colBkrD + redBkrD[,(i-1)*G + i]
+      idx_BkrD_toremove <- c(idx_BkrD_toremove,((i-1)*G+1):((i-1)*G+Q))
     }
+    redBkrD <-  redBkrD[, -idx_BkrD_toremove] # New design matrix
+    redA <- solve(t(redBkrD)%*%redBkrD)%*%t(redBkrD)%*%(c(D%*%Cbar - colBkrD)) # Linear regression type update for A
+    A[1:Q,1:Q] <- IQ
+    A[(Q+1):G,] <- matrix(redA, nrow = G - Q, ncol = Q)
     #######################################################################################
     # Update lambda if nested optimization is desired
     if(nested_lam & iter %% 10 == 0){

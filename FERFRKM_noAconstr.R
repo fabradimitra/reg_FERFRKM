@@ -1,4 +1,4 @@
-FERFRKM_Bconstr <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
+FERFRKM_noAconstr <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   # This function implements the FEFRKM algorithm for fuzzy functional data clustering.
   # Inputs:
   #  C: (I x J) coefficients for the natural cubic spline basis functions for each individual i
@@ -52,9 +52,9 @@ FERFRKM_Bconstr <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e
     yB <- c(c(t(Cbar)%*%D),zeroQJ)
     designXBpdesignXB <- t(designXB)%*%designXB
     designXBpyB <- t(designXB)%*%yB
-    M <- rbind(cbind(-designXBpdesignXB,designXBpyB%*%t(designXBpyB)),cbind(IJQ,-designXBpdesignXB))
-    ev <- eigen(M)$values
-    mu <- Re(ev[which.max(Re(ev))])
+    #M <- rbind(cbind(-designXBpdesignXB,designXBpyB%*%t(designXBpyB)),cbind(IJQ,-designXBpdesignXB))
+    #ev <- eigen(M)$values
+    mu <- 0# Re(ev[which.max(Re(ev))])
     # Ridge regression type update for B with ||B||=1
     B <- solve(designXBpdesignXB + mu*IJQ) %*% designXBpyB
     B <- matrix(B, nrow = J, ncol = Q)

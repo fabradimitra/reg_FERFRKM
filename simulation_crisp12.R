@@ -33,7 +33,7 @@ A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(0.1, 1, length.out = J)
 f1 <- psi1_wiggly(t_grid)
-f2 <- psi2_wiggly(t_grid)
+f2 <- psi2_smooth(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -44,11 +44,11 @@ idx <- diag(Lk_f > 1e-6)
 Pk <- Pk_f[,idx] # For reconstruction of K
 Lk <- Lk_f[idx,idx] # For reconstruction of K
 # Hyperparameters for FERFRKM
-lambda <- 0.001
+lambda <- 0.1
 gamma <- 1
-max_iter <- Inf
+max_iter <- 100
 tol <- 1e-6
-random_init <- FALSE
+random_init <- TRUE
 adjustedRandIndices <- numeric(250)
 sSqErrors <- numeric(250)
 # Simulation loop
@@ -132,3 +132,4 @@ legend("bottomright", legend = paste("label", 1:4),
 
 
   
+
