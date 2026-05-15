@@ -6,7 +6,7 @@ source("randgenuf.R")
 source("randgenuc.R")
 source("rand_orthogonal.R")
 source("loss_function.R")
-source("FERFRKM_BcolwiseNconstr.R")
+source("FERFRKM.R")
 source("fungcv.R")
 source("perm_hungarian_fast.R")
 # Simulation parameters
@@ -33,7 +33,7 @@ A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(0.1, 1, length.out = J)
 f1 <- psi1_wiggly(t_grid)
-f2 <- psi2_smooth(t_grid)
+f2 <- psi2_wiggly(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -44,10 +44,10 @@ idx <- diag(Lk_f > 1e-6)
 Pk <- Pk_f[,idx] # For reconstruction of K
 Lk <- Lk_f[idx,idx] # For reconstruction of K
 # Hyperparameters for FERFRKM
-lambda <- 0.1
+lambda <- 0.0001
 gamma <- 1
-max_iter <- 1000
-tol <- 1e-6
+max_iter <- Inf
+tol <- 1e-8
 random_init <- TRUE  
 adjustedRandIndices <- numeric(250)
 sSqErrors <- numeric(250)
@@ -64,7 +64,6 @@ for(iter in c(1:250)){
   # Run the FERFRKM algorithm
   if(random_init){
     # Random initialization of U and A
-    set.seed(NULL)
     U_init <- randgenuc(I, G)
     A_init <- rand_orthogonal(G, Q)
     #B_init <- rand_orthogonal(J, Q)
@@ -80,17 +79,17 @@ for(iter in c(1:250)){
     B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
   }
   # Run FERFRKM algorithm
-  res <- FERFRKM_BcolwiseNconstr(C=X,
-                                 K=K,
-                                 Pk=Pk,
-                                 Lk=Lk,
-                                 U=U_init,
-                                 A=A_init,
-                                 B=B_init,
-                                 lambda=lambda,
-                                 gamma = gamma,
-                                 max_iter = max_iter,
-                                 tol = tol)
+  res <- FERFRKM(C=X,
+                 K=K,
+                 Pk=Pk,
+                 Lk=Lk,
+                 U=U_init,
+                 A=A_init,
+                 B=B_init,
+                 lambda=lambda,
+                 gamma = gamma,
+                 max_iter = max_iter,
+                 tol = tol)
   cluster_labels_est <- max.col(res$U, ties.method = "first")
   adjustedRandIndices[iter] <- adjustedRandIndex(cluster_labels,cluster_labels_est)
   ABp <- res$A %*% t(res$B)

@@ -1,4 +1,4 @@
-FERFRKM_Bnconstr <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
+FERFRKM_BcolwiseNconstr <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   # This function implements the FEFRKM algorithm for fuzzy functional data clustering.
   # Inputs:
   #  C: (I x J) coefficients for the natural cubic spline basis functions for each individual i
@@ -28,7 +28,9 @@ FERFRKM_Bnconstr <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1
   }
   cnorm2 <- rowSums(C*C) # vector of lenght J having squared norm of c_i as element
   IJ <- diag(J)
+  IQ <- diag(Q)
   IGJ <- diag(G*J)
+  IGQ <- diag(G*Q)
   IJQ <- diag(J*Q)
   zeroQJ <- numeric(Q*J)
   sqrlamIQkrKhalf <- sqrt(lambda)*(kronecker(diag(Q),Pk%*%sqrt(Lk)%*%t(Pk)))
@@ -50,27 +52,33 @@ FERFRKM_Bnconstr <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1
     Cbar <- diag(1/diag(D2)) %*% t(U) %*% C
     designXB <- rbind(kronecker(D%*%A,IJ),sqrlamIQkrKhalf)
     yB <- c(c(t(Cbar)%*%D),zeroQJ)
-    designXBpdesignXB <- t(designXB)%*%designXB
-    designXBpyB <- t(designXB)%*%yB
-    M <- rbind(cbind(-designXBpdesignXB,designXBpyB%*%t(designXBpyB)),cbind(IJQ,-designXBpdesignXB))
-    ev <- eigen(M)$values
-    mu <- Re(ev[which.max(Re(ev))])
-    # Ridge regression type update for B with ||B||=1
-    B <- solve(designXBpdesignXB + mu*IJQ) %*% designXBpyB
-    B <- matrix(B, nrow = J, ncol = Q)
+    for(q in c(1:Q)){
+      designXBcurr <- designXB[,(J*(q-1)+1):(J*(q-1)+J)] 
+      yBcurr <- yB - designXB[,-c((J*(q-1)+1):(J*(q-1)+J))]%*%c(B[,-q]) # All but the qth column
+      designXBpdesignXB <- t(designXBcurr)%*%designXBcurr
+      designXBpyB <- t(designXBcurr)%*%yBcurr
+      M <- rbind(cbind(-designXBpdesignXB,designXBpyB%*%t(designXBpyB)),cbind(IJ,-designXBpdesignXB))
+      ev <- eigen(M)$values
+      mu <- Re(ev[which.max(Re(ev))])
+      # Ridge regression type update for the qth column of B with norm=1
+      fabB <- solve(designXBpdesignXB + mu*IJ) %*% designXBpyB
+      B[,q] <- fabB
+    }
     #######################################################################################
     # Update A
     BkrD <- kronecker(B,D)
-    A <- solve(t(BkrD)%*%BkrD)%*%t(BkrD)%*%c(D%*%Cbar) # Ridge regression type update for A
+    A <- solve(t(BkrD)%*%BkrD)%*%t(BkrD)%*%c(D%*%Cbar) # OLS update for A
     A <- matrix(A, nrow = G, ncol = Q)
     #######################################################################################
     # Compute loss function and check convergence
     loss_function_new <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
     dif <-  loss_function_curr - loss_function_new$lossp
     loss_function_curr <- loss_function_new$lossp
+    if(iter%%100==0){
     cat("Iteration: ", iter, " Loss pen: ", loss_function_curr, " Loss: ", loss_function_new$loss,
-    " Difference: ", dif, " Norm B: ", norm(B, type = "F"), 
+    " Difference: ", dif, " Norm B: ", colSums(B^2), 
     " Norm A: ", norm(A, type = "F"), "\n") #, file = "log/log.txt", append = TRUE)
+    }
     }
   return(list(U = U, A = A, B = B, loss_function = loss_function_curr, iterations = iter))
 } 
