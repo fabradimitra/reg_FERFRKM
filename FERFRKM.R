@@ -40,6 +40,7 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     distxmg2 <- outer(cnorm2,aBnorm2, "+") - 2 * (C %*% BAp) # matrix of dimension IxG ||c_i - B a_g||^2
     U <- exp(-distxmg2/gamma)
     U <- U/matrix(rowSums(U),I,G)
+    U[U<1e-12]<-1e-12
     #######################################################################################
     # Update B
     D <- diag(sqrt(colSums(U)))
