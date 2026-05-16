@@ -1,0 +1,8 @@
+# Random initialization
+if(random_init){
+    # Random initialization of U and A
+    U_init <- randgenuc(I, G)
+    A_init <- rand_orthogonal(G, Q)
+    #B_init <- rand_orthogonal(J, Q)
+    B_init <- t(t(A_init)%*%solve(t(U_init)%*%U_init)%*%t(U_init)%*%X)
+  }

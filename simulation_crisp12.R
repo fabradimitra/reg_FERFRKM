@@ -48,7 +48,7 @@ lambda <- 0.0001
 gamma <- 1
 max_iter <- Inf
 tol <- 1e-8
-random_init <- TRUE  
+random_init <- FALSE  
 adjustedRandIndices <- numeric(250)
 sSqErrors <- numeric(250)
 # Simulation loop
@@ -62,22 +62,14 @@ for(iter in c(1:250)){
   # Compute the data matrix X
   X <- U %*% t(curves) + E
   # Run the FERFRKM algorithm
-  if(random_init){
-    # Random initialization of U and A
-    U_init <- randgenuc(I, G)
-    A_init <- rand_orthogonal(G, Q)
-    #B_init <- rand_orthogonal(J, Q)
-    B_init <- t(t(A_init)%*%solve(t(U_init)%*%U_init)%*%t(U_init)%*%X)
-  }else{
-    # K-means initialization of U
-    kmeans_res <- kmeans(X, G, nstart = 10)
-    U_init <- matrix(0, nrow = I, ncol = G)
-    U_init[cbind(seq_len(I), kmeans_res$cluster)] <- 1L
-    # PCA initialization of A and B
-    SVD <- svd(diag(1/colSums(U_init)) %*% t(U_init) %*% X)
-    A_init <- SVD$u[, 1:Q]
-    B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
-  }
+  # K-means initialization of U
+  kmeans_res <- kmeans(X, G, nstart = 10)
+  U_init <- matrix(0, nrow = I, ncol = G)
+  U_init[cbind(seq_len(I), kmeans_res$cluster)] <- 1L
+  # PCA initialization of A and B
+  SVD <- svd(diag(1/colSums(U_init)) %*% t(U_init) %*% X)
+  A_init <- SVD$u[, 1:Q]
+  B_init <- SVD$v[, 1:Q] %*% diag(SVD$d[1:Q])
   # Run FERFRKM algorithm
   res <- FERFRKM(C=X,
                  K=K,

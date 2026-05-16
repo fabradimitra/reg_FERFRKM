@@ -45,8 +45,7 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     D <- diag(sqrt(colSums(U)))
     D2 <- D^2
     Cbar <- diag(1/diag(D2)) %*% t(U) %*% C
-    D2A <- D2%*%A
-    B <- solve(kronecker(t(A)%*%D2A,IJ)+lambda*kronecker(t(A)%*%A,K))%*%c(t(Cbar)%*%D2A)
+    B <- solve(kronecker(t(A)%*%D2%*%A,IJ)+lambda*kronecker(t(A)%*%A,K))%*%c(t(Cbar)%*%D2%*%A)
     B <- matrix(B, nrow = J, ncol = Q)
     #######################################################################################
     # Update A
@@ -58,8 +57,7 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     dif <-  loss_function_curr - loss_function_new$lossp
     loss_function_curr <- loss_function_new$lossp
     cat("Iteration: ", iter, " Loss pen: ", loss_function_curr, " Loss: ", loss_function_new$loss,
-    " Difference: ", dif, " Norm B: ", norm(B, type = "F"), 
-    " Norm A: ", norm(A, type = "F"), "\n") #, file = "log/log.txt", append = TRUE)
+    " Difference: ", dif, " Norm B: ", norm(B, type = "F")," Norm A: ", norm(A, type = "F"), "\n")
     }
   return(list(U = U, A = A, B = B, loss_function = loss_function_curr, iterations = iter))
 } 
