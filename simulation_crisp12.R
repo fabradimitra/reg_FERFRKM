@@ -40,9 +40,6 @@ res <- kspline(t_grid)
 K <- res$K
 Pk_f <- res$Pk
 Lk_f <- res$Lk
-idx <- diag(Lk_f > 1e-6)
-Pk <- Pk_f[,idx] # For reconstruction of K
-Lk <- Lk_f[idx,idx] # For reconstruction of K
 # Hyperparameters for FERFRKM
 lambda <- 0.0001
 gamma <- 1
@@ -81,7 +78,7 @@ for(iter in c(1:250)){
                  lambda=lambda,
                  gamma = gamma,
                  max_iter = max_iter,
-                 tol = tol)
+                 tol = tol) 
   cluster_labels_est <- max.col(res$U, ties.method = "first")
   adjustedRandIndices[iter] <- adjustedRandIndex(cluster_labels,cluster_labels_est)
   ABp <- res$A %*% t(res$B)

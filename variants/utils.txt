@@ -1,3 +1,7 @@
+# K reconstruction
+idx <- diag(Lk_f > 1e-6)
+Pk <- Pk_f[,idx] # For reconstruction of K
+Lk <- Lk_f[idx,idx] # For reconstruction of K
 # Random initialization
 if(random_init){
     # Random initialization of U and A
