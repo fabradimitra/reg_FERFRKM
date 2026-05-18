@@ -38,8 +38,8 @@ f2 <- psi2_wiggly(t_grid)
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
 K <- res$K
-Pk_f <- res$Pk
-Lk_f <- res$Lk
+Pk <- res$Pk
+Lk <- res$Lk
 # Hyperparameters for FERFRKM
 lambda <- 0.0001
 gamma <- 1
