@@ -44,9 +44,6 @@ cv_ferfrkm_grid <- function(
       X_train <- Xtr[train_idx, , drop = FALSE]
       X_valid <- Xtr[valid_idx, , drop = FALSE]
 #
-      best_fit <- NULL
-      best_train_obj <- Inf
-#
       init <- init_ferfrkm(
           X = X_train,
           G = G,
@@ -69,12 +66,7 @@ cv_ferfrkm_grid <- function(
           tol = tol
         )
 #
-        if (fit$loss_function < best_train_obj) {
-          best_train_obj <- fit$loss_function
-          best_fit <- fit
-        }
-#
-      fold_scores[fold_idx] <- fit$loss_function
+      fold_scores[fold_idx] <- fit$loss_function_unpen
     }
 #
     data.frame(
