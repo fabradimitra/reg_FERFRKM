@@ -60,7 +60,7 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     cat("Iteration: ", iter, " Loss pen: ", loss_function_curr, " Loss: ", loss_function_new$loss,
     " Difference: ", dif, " Norm B: ", norm(B, type = "F")," Norm A: ", norm(A, type = "F"), "\n")
     }
-  return(list(U = U, A = A, B = B, 
+  return(list(U = U, A = A, B = B, Cbar = Cbar,
     loss_function = loss_function_curr, 
     loss_function_unpen = loss_function_new$loss,
     iterations = iter))

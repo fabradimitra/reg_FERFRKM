@@ -11,7 +11,7 @@ source("rand_orthogonal.R")
 source("loss_function.R")
 source("FERFRKM.R")
 source("perm_hungarian_fast.R")
-source("cv_ferfrkm_grid.R")
+source("cv_ferfrkm_XB.R")
 #
 seed <- 123
 set.seed(seed)
@@ -40,7 +40,7 @@ A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(0.1, 1, length.out = J)
 f1 <- psi1_wiggly(t_grid)
-f2 <- psi2_wiggly(t_grid)
+f2 <- psi2_smooth(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -90,7 +90,7 @@ init_ferfrkm <- function(X, G, Q, seed = NULL, nstart_kmeans = 10) {
   list(U = U_init, A = A_init, B = B_init)
 }
 #
-cv_res <- cv_ferfrkm_grid(
+cv_res <- cv_ferfrkm_XB(
   Xtr = X,
   G = 4,
   Q = 2,

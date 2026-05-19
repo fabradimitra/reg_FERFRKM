@@ -1,4 +1,4 @@
-cv_ferfrkm_grid <- function(
+cv_ferfrkm_loss <- function(
   Xtr,
   G,
   Q,
