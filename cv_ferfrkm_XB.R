@@ -119,7 +119,6 @@ cv_ferfrkm_XB <- function(
 #
   list(
     results = results,
-    best = results[1, , drop = FALSE],
-    grid = grid[, c("gamma", "lambda")]
+    best = results[1, , drop = FALSE]
   )
 }
