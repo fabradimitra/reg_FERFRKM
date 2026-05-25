@@ -7,14 +7,13 @@ source("randgenuc.R")
 source("rand_orthogonal.R")
 source("loss_function.R")
 source("FERFRKM.R")
-source("fungcv.R")
 source("perm_hungarian_fast.R")
 # Simulation parameters
 I <- 150
 J <- 100
 Q <- 2
 G <- 4
-var.err <- 0.3
+var.err <- 0.2
 # smooth smooth
 psi1_smooth <- function(t) {
   t + sin(pi * t) * exp(-t)
@@ -32,8 +31,8 @@ psi2_wiggly <- function(t) {
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(0.1, 1, length.out = J)
-f1 <- psi1_wiggly(t_grid)
-f2 <- psi2_wiggly(t_grid)
+f1 <- psi1_smooth(t_grid)
+f2 <- psi2_smooth(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -41,7 +40,7 @@ K <- res$K
 Pk <- res$Pk
 Lk <- res$Lk
 # Hyperparameters for FERFRKM
-lambda <- 0.0001
+lambda <- 0.01
 gamma <- 1
 max_iter <- Inf
 tol <- 1e-8
