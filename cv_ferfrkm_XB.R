@@ -82,7 +82,7 @@ cv_ferfrkm_XB <- function(
     data.frame(
       gamma = gamma,
       lambda = lambda,
-      mean_cv_score = mean(fold_scores),
+      mean_cv_score = median(fold_scores),
       sd_cv_score = sd(fold_scores),
       stringsAsFactors = FALSE
     )
