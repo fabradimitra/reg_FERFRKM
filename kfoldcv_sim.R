@@ -22,7 +22,7 @@ I <- 50
 J <- 101
 Q <- 2
 G <- 4
-var.err <- 0.3
+var.err <- 0.2
 # smooth smooth
 psi1_smooth <- function(t) {
   t + sin(pi * t) * exp(-t)
@@ -49,8 +49,8 @@ K <- res$K
 Pk <- res$Pk
 Lk <- res$Lk
 # Grid of lambda and gamma
-default_gamma_grid <- seq(0.5, 10, by = 0.5)
-default_lambda_grid <- 10^seq(-5, 0, by = 0.25)
+default_gamma_grid <- seq(0.2, 3, by = 0.20)
+default_lambda_grid <- 10^seq(-6, 0, by = 0.25)
 #
 simulation_results <- data.frame(
   lambda_best = numeric(250),
@@ -59,7 +59,7 @@ simulation_results <- data.frame(
   SSQerr = numeric(250)
 )
 # Monte Carlo simulations
-for(iter in c(1:250)){
+for(iter in c(1:2)){
   set.seed(iter)
   U <- randgenuc(I, G)
   cluster_labels <- max.col(U, ties.method = "first")
@@ -82,7 +82,8 @@ for(iter in c(1:250)){
     tol = 1e-8,
     nstart_kmeans = kmeans_starts,
     parallel = TRUE,
-    seed = iter
+    seed = iter,
+    randomstarts = randomstarts
   )
   simulation_results$lambda_best[iter] <- cv_res$best$lambda
   simulation_results$gamma_best[iter] <- cv_res$best$gamma
@@ -95,20 +96,26 @@ for(iter in c(1:250)){
       U_init <- randgenuc(I, G)
       A_init <- rand_orthogonal(G, Q)
       B_init <- t(t(A_init)%*%solve(t(U_init)%*%U_init)%*%t(U_init)%*%X)
-      init <- list(U=init$U, A=init$A, B=init$B)
+      init <- list(U=U_init, A=A_init, B=B_init)
     }
     # Run FERFRKM algorithm
-    res_cur <- FERFRKM(C=X,
-                       K=K,
-                       Pk=Pk,
-                       Lk=Lk,
-                       U=init$U,
-                       A=init$A,
-                       B=init$B,
-                       lambda= cv_res$best$lambda,
-                       gamma = cv_res$best$gamma,
-                       max_iter = Inf,
-                       tol = 1e-8)
+    res_cur <- tryCatch(
+      FERFRKM(C=X,
+              K=K,
+              Pk=Pk,
+              Lk=Lk,
+              U=init$U,
+              A=init$A,
+              B=init$B,
+              lambda= cv_res$best$lambda,
+              gamma = cv_res$best$gamma,
+              max_iter = Inf,
+              tol = 1e-8),
+          error = function(e) NULL
+        )
+      if (is.null(res_cur)) {
+          next
+        }
     if(cur_loss>res_cur$loss_function){
       res <- res_cur
       cur_loss <- res$loss_function

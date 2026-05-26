@@ -14,7 +14,8 @@ cv_ferfrkm_XB <- function(
   nstart_kmeans = 10,
   parallel = FALSE,
   ncores = max(1L, parallel::detectCores() - 1L),
-  seed = 123
+  seed = 123,
+  randomstarts = 5
 ) {
   stopifnot(is.matrix(Xtr), G >= 2, Q >= 1, Q <= min(G, ncol(Xtr)))
   #
@@ -43,29 +44,43 @@ cv_ferfrkm_XB <- function(
       valid_idx <- !train_idx
       X_train <- Xtr[train_idx, , drop = FALSE]
       X_valid <- Xtr[valid_idx, , drop = FALSE]
-#
-      init <- init_ferfrkm(
+      score_fin <- Inf
+      for(start in seq_len(randomstarts)){
+        if(start == 1){
+          init <- init_ferfrkm(
           X = X_train,
           G = G,
           Q = Q,
           seed = seed,
           nstart_kmeans = nstart_kmeans
-        )
+          )
+        }else{
+          U_init <- randgenuc(nrow(X_train), G)
+          A_init <- rand_orthogonal(G, Q)
+          B_init <- t(t(A_init) %*% solve(t(U_init) %*% U_init) %*% t(U_init) %*% X_train)
+          init <- list(U = U_init, A = A_init, B = B_init)
+        }
 #
-        fit <- FERFRKM(
-          C = X_train,
-          K = K,
-          Pk = Pk,
-          Lk = Lk,
-          U = init$U,
-          A = init$A,
-          B = init$B,
-          lambda = lambda,
-          gamma = gamma,
-          max_iter = max_iter,
-          tol = tol
+        fit <- tryCatch(
+          FERFRKM(
+            C = X_train,
+            K = K,
+            Pk = Pk,
+            Lk = Lk,
+            U = init$U,
+            A = init$A,
+            B = init$B,
+            lambda = lambda,
+            gamma = gamma,
+            max_iter = max_iter,
+            tol = tol
+          ),
+          error = function(e) NULL
         )
-      # Xie-Beni index on the left out fold
+      if (is.null(fit)) {
+          next
+        }
+      # Xie-Beni index on the left out fold if successful fit
       centers <- fit$A %*% t(fit$B)   # G x J
       cnorm2_valid <- rowSums(X_valid^2)     # length n_valid
       vnorm2 <- rowSums(centers^2)           # length G
@@ -76,8 +91,13 @@ cv_ferfrkm_XB <- function(
       sep2 <- as.matrix(dist(centers))^2
       sep2[sep2 == 0] <- Inf
       min_sep2 <- min(sep2)
-      fold_scores[fold_idx] <- sum(U_valid * dist2_valid) / (nrow(X_valid) * min_sep2)
-    }
+      cur_score <- sum(U_valid * dist2_valid) / (nrow(X_valid) * min_sep2)
+        if(cur_score<score_fin){
+          score_fin <- cur_score
+        }
+      }
+      fold_scores[fold_idx] <- score_fin
+  }
 #
     data.frame(
       gamma = gamma,
@@ -86,7 +106,7 @@ cv_ferfrkm_XB <- function(
       sd_cv_score = sd(fold_scores),
       stringsAsFactors = FALSE
     )
-  }
+    }
 #
   if (parallel) {
     cl <- parallel::makeCluster(ncores) # Creates a cluster with ncores
@@ -100,7 +120,9 @@ cv_ferfrkm_XB <- function(
       .export = c( # Variables and function to consider
         "FERFRKM",
         "init_ferfrkm",
-        "loss_function"
+        "loss_function",
+        "randgenuc",
+        "rand_orthogonal"
       )
     ) %dopar% {
       fit_one_combo(grid[grid_idx, , drop = FALSE])
