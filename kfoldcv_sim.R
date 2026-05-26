@@ -41,7 +41,7 @@ A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(-1, 1, length.out = J)
 f1 <- psi1_smooth(t_grid)
-f2 <- psi2_smooth(t_grid)
+f2 <- psi2_wiggly(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -50,7 +50,7 @@ Pk <- res$Pk
 Lk <- res$Lk
 # Grid of lambda and gamma
 default_gamma_grid <- seq(0.2, 3, by = 0.20)
-default_lambda_grid <- 10^seq(-6, 0, by = 0.25)
+default_lambda_grid <- 10^seq(-6, -2, by = 0.25)
 #
 simulation_results <- data.frame(
   lambda_best = numeric(250),
