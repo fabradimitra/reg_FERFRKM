@@ -1,4 +1,4 @@
-init_ferfrkm <- function(X, G, Q, seed = NULL, nstart_kmeans = 10) {
+init_FERFRKM <- function(X, G, Q, seed = NULL, nstart_kmeans = 10) {
   if (!is.null(seed)) {
     set.seed(seed)
   }

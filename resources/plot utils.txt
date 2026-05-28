@@ -1,0 +1,25 @@
+# Plot the centroids and their reconstruction for one iteration ----
+tt <- seq(min(t_grid), max(t_grid), length.out = 400)
+Ym <- apply(t(curves), 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matplot(
+  tt, Ym, type = "l", lwd = 1, lty = 1,
+  col = c("red","blue","darkgreen","orange"),
+  xlab = "", ylab = ""
+)
+Ymr <- apply(ABp[perm,], 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matlines(
+  tt, Ymr, lwd = 1, lty = 2,
+  col = c("red","blue","darkgreen","orange")
+)
+legend(
+  "bottomright",
+  legend = paste0("cluster ", 1:4),
+  col = c("red","blue","darkgreen","orange"),
+  lwd = 2, bty = "n"
+)
+cols <- c("red", "blue", "darkgreen", "orange")[cluster_labels]
+Y <- t(apply(X, 1, function(y) splinefun(t_grid, y, method = "natural")(tt)))
+matplot(tt, t(Y), type = "l", lty = 1, col = cols, lwd = 2,
+        xlab = "t", ylab = "spline value")
+legend("bottomright", legend = paste("label", 1:4),
+       col = c("red","blue","darkgreen","orange"), lwd = 2, bty = "n")

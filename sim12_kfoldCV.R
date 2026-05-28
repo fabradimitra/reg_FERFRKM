@@ -10,19 +10,18 @@ source("rand_orthogonal.R")
 source("loss_function.R")
 source("FERFRKM.R")
 source("perm_hungarian_fast.R")
-source("cv_ferfrkm_XB_optim.R")
-source("make_ferfrkm_grid.R")
-source("init_ferfrkm.R")
+source("CV_FERFRKM.R")
+source("init_FERFRKM.R")
 source("make_folds.R")
 # Simulation preparation -----
 randomstarts <- 5
 kmeans_starts <- 20
 # Set up dimensions and centroids
-I <- 50
+I <- 150
 J <- 101
 Q <- 2
 G <- 4
-var.err <- 0.2
+var.err <- 0.3
 # smooth smooth
 psi1_smooth <- function(t) {
   t + sin(pi * t) * exp(-t)
@@ -56,7 +55,7 @@ simulation_results <- data.frame(
   SSQerr = numeric(250)
 )
 # Monte Carlo simulations
-for(iter in c(1:10)){
+for(iter in c(1)){
   set.seed(iter)
   U <- randgenuc(I, G)
   cluster_labels <- max.col(U, ties.method = "first")
@@ -65,27 +64,32 @@ for(iter in c(1:10)){
   # Compute the data matrix X
   X <- U %*% t(curves) + E
   # Cross validation
-  cv_res <- cv_ferfrkm_XB_optim(
-    Xtr = X,
-    G = G,
-    Q = Q,
-    K = K,
-    Pk = Pk,
-    Lk = Lk,
-    folds = 5,
-    max_iter = Inf,
-    tol = 1e-8,
-    nstart_kmeans = kmeans_starts,
-    seed = iter,
-    randomstarts = randomstarts
-  )
-  simulation_results$lambda_best[iter] <- cv_res$lambda
-  simulation_results$gamma_best[iter] <- cv_res$gamma
+  invisible(capture.output(
+    cv_res <- CV_FERFRKM(
+      Xtr = X,
+      G = G,
+      Q = Q,
+      K = K,
+      Pk = Pk,
+      Lk = Lk,
+      lambda_init = 0.001,
+      gamma_init = 1,
+      folds = 5,
+      max_iter = Inf,
+      tol = 1e-8,
+      nstart_kmeans = kmeans_starts,
+      seed = iter,
+      randomstarts = randomstarts
+    ),
+    type = "output"
+  ))
+  simulation_results$lambda_best[iter] <- cv_res$par[1]
+  simulation_results$gamma_best[iter] <- cv_res$par[2]
   # Fit the best combination:
   cur_loss <- Inf
   for(start in seq_len(randomstarts)){
     if(start == 1){
-      init <- init_ferfrkm(X, G, Q, seed = iter, nstart_kmeans = kmeans_starts) 
+      init <- init_FERFRKM(X, G, Q, seed = iter, nstart_kmeans = kmeans_starts) 
     }else{
       U_init <- randgenuc(I, G)
       A_init <- rand_orthogonal(G, Q)
@@ -101,8 +105,8 @@ for(iter in c(1:10)){
               U=init$U,
               A=init$A,
               B=init$B,
-              lambda= cv_res$best$lambda,
-              gamma = cv_res$best$gamma,
+              lambda= cv_res$par[1],
+              gamma = cv_res$par[2],
               max_iter = Inf,
               tol = 1e-8),
           error = function(e) NULL
@@ -130,28 +134,3 @@ mean(simulation_results$ARI)
 sd(simulation_results$ARI)
 mean(simulation_results$SSQerr)
 sd(simulation_results$SSQerr)
-# Plot the centroids and their reconstruction for one iteration ----
-tt <- seq(min(t_grid), max(t_grid), length.out = 400)
-Ym <- apply(t(curves), 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
-matplot(
-  tt, Ym, type = "l", lwd = 1, lty = 1,
-  col = c("red","blue","darkgreen","orange"),
-  xlab = "", ylab = ""
-)
-Ymr <- apply(ABp[perm,], 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
-matlines(
-  tt, Ymr, lwd = 1, lty = 2,
-  col = c("red","blue","darkgreen","orange")
-)
-legend(
-  "bottomright",
-  legend = paste0("cluster ", 1:4),
-  col = c("red","blue","darkgreen","orange"),
-  lwd = 2, bty = "n"
-)
-cols <- c("red", "blue", "darkgreen", "orange")[cluster_labels]
-Y <- t(apply(X, 1, function(y) splinefun(t_grid, y, method = "natural")(tt)))
-matplot(tt, t(Y), type = "l", lty = 1, col = cols, lwd = 2,
-        xlab = "t", ylab = "spline value")
-legend("bottomright", legend = paste("label", 1:4),
-       col = c("red","blue","darkgreen","orange"), lwd = 2, bty = "n")
