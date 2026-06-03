@@ -83,6 +83,9 @@ CV_FERFRKM <- function(
       sep2[sep2 == 0] <- Inf
       min_sep2 <- min(sep2)
       cur_score <- sum(U_valid * dist2_valid) / (nrow(X_valid) * min_sep2)
+      if (is.null(cur_score)|is.na(cur_score)) {
+          next
+      }
       if(cur_score<score_fin){
         score_fin <- cur_score
       }
