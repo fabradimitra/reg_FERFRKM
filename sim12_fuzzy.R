@@ -21,11 +21,10 @@ kmeans_starts <- 20
 lambda_init <- 0.1 
 gamma_init <- 1
 # Set up dimensions and centroids
-I <- 150
+I <- 200
 J <- 101
 Q <- 2
 G <- 4
-var.err <- 0.1
 # smooth smooth
 psi1_smooth <- function(t) {
   t + sin(pi * t) * exp(-t)
@@ -44,7 +43,7 @@ A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(-1, 1, length.out = J)
 f1 <- psi1_smooth(t_grid)
-f2 <- psi2_smooth(t_grid)
+f2 <- psi2_wiggly(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -73,10 +72,6 @@ for(iter in c(1)){
     mvrnorm(1, mu = curves[, lbl], Sigma = IJ)
   }
   ))
-  # Generate the error
-  E <- matrix(rnorm(I * J, sd = var.err), nrow = I, ncol = J)
-  # Compute the data matrix X 
-  X <- X + E
   # Cross validation
   invisible(capture.output(
     cv_res <- CV_FERFRKM(
@@ -86,8 +81,8 @@ for(iter in c(1)){
       K = K,
       Pk = Pk,
       Lk = Lk,
-      lambda_init = 1,
-      gamma_init = 1,
+      lambda_init = lambda_init,
+      gamma_init = gamma_init,
       folds = 5,
       max_iter = Inf,
       tol = 1e-8,
