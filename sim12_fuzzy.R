@@ -18,12 +18,14 @@ source("make_folds.R")
 randomstarts <- 5
 randomstarts_cv <- 3
 kmeans_starts <- 20
+lambda_init <- 0.1 
+gamma_init <- 1
 # Set up dimensions and centroids
-I <- 50
+I <- 150
 J <- 101
 Q <- 2
 G <- 4
-var.err <- 0.2
+var.err <- 0.1
 # smooth smooth
 psi1_smooth <- function(t) {
   t + sin(pi * t) * exp(-t)
@@ -41,8 +43,8 @@ psi2_wiggly <- function(t) {
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(-1, 1, length.out = J)
-f1 <- psi1_wiggly(t_grid)
-f2 <- psi2_wiggly(t_grid)
+f1 <- psi1_smooth(t_grid)
+f2 <- psi2_smooth(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -66,7 +68,7 @@ for(iter in c(1)){
   prob = rep(1/G,G)
   ))
   cluster_labels <- max.col(dummy_labels, ties.method = "first")
-  # Draw data from multivariate normal distriubution
+  # Draw data from multivariate normal distribution
   X <- t(sapply(cluster_labels, function(lbl){
     mvrnorm(1, mu = curves[, lbl], Sigma = IJ)
   }
@@ -84,7 +86,7 @@ for(iter in c(1)){
       K = K,
       Pk = Pk,
       Lk = Lk,
-      lambda_init = 0.001,
+      lambda_init = 1,
       gamma_init = 1,
       folds = 5,
       max_iter = Inf,
