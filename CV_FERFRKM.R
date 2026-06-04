@@ -98,7 +98,7 @@ CV_FERFRKM <- function(
   optim(
     par = c(lambda_init,gamma_init),
     fn = cv_xie_beni_optim,
-    method = "BFGS",
+    method = "Nelder-Mead",
     folds = folds, 
     fold_ids = fold_ids,
     G = G,
