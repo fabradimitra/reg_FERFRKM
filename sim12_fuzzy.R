@@ -16,12 +16,12 @@ source("init_FERFRKM.R")
 source("make_folds.R")
 # Simulation preparation -----
 randomstarts <- 5
-randomstarts_cv <- 3
+randomstarts_cv <- 2
 kmeans_starts <- 20
 lambda_init <- 0.1 
 gamma_init <- 1
 # Set up dimensions and centroids
-I <- 200
+I <- 100
 J <- 101
 Q <- 2
 G <- 4
@@ -39,10 +39,10 @@ psi2_wiggly <- function(t) {
   sin(20 * t)
 }
 # True A matrix (orthogonal)
-A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
+A <- matrix(c(1,0,-1,-1,0,-1,-1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(-1, 1, length.out = J)
-f1 <- psi1_smooth(t_grid)
+f1 <- psi1_wiggly(t_grid)
 f2 <- psi2_wiggly(t_grid)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
@@ -59,7 +59,7 @@ simulation_results <- data.frame(
 )
 IJ <- diag(J)
 # Monte Carlo simulations
-for(iter in c(1)){
+for(iter in c(6)){
   set.seed(iter)
   # Simulate labels 
   dummy_labels <- t(rmultinom(
