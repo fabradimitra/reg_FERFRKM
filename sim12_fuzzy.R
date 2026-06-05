@@ -16,9 +16,9 @@ source("init_FERFRKM.R")
 source("make_folds.R")
 # Simulation preparation -----
 randomstarts <- 5
-randomstarts_cv <- 2
+randomstarts_cv <- 3
 kmeans_starts <- 20
-lambda_init <- 0.1 
+lambda_init <- 1 
 gamma_init <- 1
 # Set up dimensions and centroids
 I <- 100
@@ -33,10 +33,10 @@ psi2_smooth <- function(t) {
   cos(3 + pi * t)
 }
 psi1_wiggly <- function(t) {
-  cos(20 * t)
+  2 + cos(20 * t)
 }
 psi2_wiggly <- function(t) {
-  sin(20 * t)
+  1 + sin(10 * t)
 }
 # True A matrix (orthogonal)
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
@@ -59,7 +59,7 @@ simulation_results <- data.frame(
 )
 IJ <- diag(J)
 # Monte Carlo simulations
-for(iter in c(6)){
+for(iter in c(1:3)){
   set.seed(iter)
   # Simulate labels 
   dummy_labels <- t(rmultinom(
