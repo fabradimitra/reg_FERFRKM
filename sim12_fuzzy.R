@@ -39,7 +39,7 @@ psi2_wiggly <- function(t) {
   sin(20 * t)
 }
 # True A matrix (orthogonal)
-A <- matrix(c(1,0,-1,-1,0,-1,-1,1), nrow= G, ncol = Q)
+A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(-1, 1, length.out = J)
 f1 <- psi1_wiggly(t_grid)
