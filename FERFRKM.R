@@ -22,7 +22,7 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   if (!all(dim(A) == c(G, Q))) stop("A must be G x Q with G = ncol(U).")
   if (!all(dim(B) == c(J, Q))) stop("B must be J x Q with J = ncol(C) and Q = ncol(A).")
   if (!isTRUE(all.equal(K, t(K), tol = 1e-10))) stop("K must be symmetric.")
-  if (lambda < 0 || gamma <= 0 || tol <= 0 || max_iter < 1) stop("Invalid hyperparameters.")
+  if (lambda < 0 || gamma < 0 || tol <= 0 || max_iter < 1) stop("Invalid hyperparameters.")
   if (any(!is.finite(C)) || any(!is.finite(K)) || any(!is.finite(U)) || any(!is.finite(A)) || any(!is.finite(B))) {
   stop("Inputs contain NA/NaN/Inf.")
   }
@@ -38,9 +38,15 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     BAp <- B %*% t(A)
     aBnorm2 <- colSums(BAp*BAp) # vector of lenght G having squared norm of B a_g as element
     distxmg2 <- outer(cnorm2,aBnorm2, "+") - 2 * (C %*% BAp) # matrix of dimension IxG ||c_i - B a_g||^2
-    U <- exp(-distxmg2/gamma)
-    U <- U/matrix(rowSums(U),I,G)
-    U[U<1e-12]<-1e-12
+    if(gamma==0){
+      U <- matrix(0,nrow = I, ncol = G)
+      U[cbind(seq_len(I), max.col(-distxmg2, ties.method = "first"))] <- 1
+      U[U<1e-12]<-1e-12
+    }else{
+      U <- exp(-distxmg2/gamma)
+      U <- U/matrix(rowSums(U),I,G)
+      U[U<1e-12]<-1e-12
+    }
     #######################################################################################
     # Update B
     D <- diag(sqrt(colSums(U)))
@@ -57,9 +63,6 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     loss_function_new <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
     dif <-  loss_function_curr - loss_function_new$lossp
     loss_function_curr <- loss_function_new$lossp
-    if(dif<0){
-
-    }
     cat("Iteration: ", iter, " Loss pen: ", loss_function_curr, " Loss: ", loss_function_new$loss,
     " Difference: ", dif, " Norm B: ", norm(B, type = "F")," Norm A: ", norm(A, type = "F"), "\n")
     }
