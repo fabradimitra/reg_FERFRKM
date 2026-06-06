@@ -69,5 +69,6 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   return(list(U = U, A = A, B = B, Cbar = Cbar,
     loss_function = loss_function_curr, 
     loss_function_unpen = loss_function_new$loss,
+    wdev = loss_function_new$wdev,
     iterations = iter))
 } 
