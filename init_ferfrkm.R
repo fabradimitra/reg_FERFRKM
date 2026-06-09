@@ -9,7 +9,8 @@ init_FERFRKM <- function(X, G, Q, seed = NULL, nstart_kmeans = 10) {
   #
   svd_init <- svd(diag(1 / colSums(U_init)) %*% t(U_init) %*% X)
   A_init <- svd_init$u[, seq_len(Q), drop = FALSE] # drop = FALSE forces R to keep a matrix
-  B_init <- svd_init$v[, seq_len(Q), drop = FALSE] %*% diag(svd_init$d[seq_len(Q)])
+  d_init <- svd_init$d[seq_len(Q)]
+  B_init <- svd_init$v[, seq_len(Q), drop = FALSE] %*% diag(d_init, nrow = Q, ncol = Q)
   #
   list(U = U_init, A = A_init, B = B_init)
 }

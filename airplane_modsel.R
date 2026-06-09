@@ -14,6 +14,8 @@ source("preggq_int.R")
 # load dataset
 load("data/plane.RData")
 X <- scale(X,center=TRUE,scale=FALSE)
+I <- nrow(X)
+J <- ncol(X)
 # Hyperparams
 randomstarts <- 5
 randomstarts_cv <- 3
@@ -31,20 +33,19 @@ Pk <- res$Pk
 Lk <- res$Lk
 # G and Q selection
 G_max <- 9
-gridGQ <- do.call(rbind, lapply(2:G_max, function(G) {
-  data.frame(
-    G = G,
-    Q = 2:(G - 1),
-    lambda = 0,
-    gamma = 0,
-    wdev = 0,
-    ARI = 0,
-    loss = 0
-  )
-}))
-for(i in nrow(gridGQ)){
-  G <- gridGQ[i,1]
-  Q <-  gridGQ[i,2]
+#gridGQ <- do.call(rbind, lapply(2:G_max, function(G) {
+#  data.frame(
+#    G = G,
+#    Q = 2:(G - 1),
+#    lambda = 0,
+#    gamma = 0,
+#    wdev = 0,
+#    ARI = 0,
+#    loss = 0
+#  )
+#}))
+G <- 2
+Q <- 2
   # Cross validation
   invisible(capture.output(
     cv_res <- CV_FERFRKM(
@@ -99,9 +100,5 @@ for(i in nrow(gridGQ)){
       cur_loss <- res$loss_function
     }
   }
-  gridGQ[i,3:7] <- c(cv_res$par[1],cv_res$par[2],res$wdev, ARI.F(tcm,res$U), cur_loss) 
-  cat("G: ", G, "Q: ", Q, " Lambda* ", gridGQ[i,3], " Gamma* ", gridGQ[i,4],
-    "within-cluster deviance: ", gridGQ[i,5], " FARI: ", gridGQ[i,6] ," loss: ", gridGQ[i,7],"\n")
-  save.image("data/fit_plane.RData")
-}
-load("data/fit_plane.RData")
+  modelsel[2,] <- c(2,2,cv_res$par[1],cv_res$par[2],res$wdev, ARI.F(tcm,res$U), cur_loss) 
+save.image("data/modelsel_plane.RData")
