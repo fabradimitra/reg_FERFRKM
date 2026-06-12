@@ -298,3 +298,51 @@ psi2_wiggly <- function(t) {
 }
 # True A matrix (orthogonal)
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
+
+matlines(
+  tt, Ymr, lwd = 2, lty = 2,
+  col = c("red")
+)
+# Centroid 2 ----
+Ym <- apply(centroid_2, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matplot(
+  tt, Ym, type = "l", lwd = 2, lty = 1,
+  col = c("blue"),
+  xlab = "", ylab = "", ylim = c(-1.5,2),
+  main = "Eurofighter"
+)
+est_centroid_2 <- t(as.matrix(est_centroids[2,]))
+Ymr <- apply(est_centroid_2, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matlines(
+  tt, Ymr, lwd = 2, lty = 2,
+  col = c("blue")
+)
+
+# Centroid 6 ----
+Ym <- apply(centroid_6, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matplot(
+  tt, Ym, type = "l", lwd = 2, lty = 1,
+  col = c("violet"),
+  xlab = "", ylab = "",
+  main = "F-22"
+)
+est_centroid_6 <- t(as.matrix(est_centroids[4,]))
+Ymr <- apply(est_centroid_6, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matlines(
+  tt, Ymr, lwd = 2, lty = 2,
+  col = c("violet")
+)
+# Centroid 7 ----
+Ym <- apply(centroid_7, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matplot(
+  tt, Ym, type = "l", lwd = 2, lty = 1,
+  col = c("brown"),
+  xlab = "", ylab = "",
+  main = "F-15"
+)
+est_centroid_7 <- t(as.matrix(est_centroids[4,]))
+Ymr <- apply(est_centroid_7, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matlines(
+  tt, Ymr, lwd = 2, lty = 2,
+  col = c("brown")
+)

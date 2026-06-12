@@ -107,3 +107,76 @@ for(i in nrow(gridGQ)){
   save.image("data/fit_plane.RData")
 }
 load("data/fit_plane.RData")
+# Computing the Xie-Beni index
+compute_xie_beni <- function(X, centers, gamma) {
+  cnorm2 <- rowSums(X^2)
+  vnorm2 <- rowSums(centers^2)
+  dist2 <- outer(cnorm2, vnorm2, "+") - 2 * (X %*% t(centers))
+  dist2[!is.finite(dist2)] <- Inf
+  U <- exp(-dist2 / gamma)
+  row_sums <- rowSums(U)
+  row_sums[!is.finite(row_sums) | row_sums == 0] <- 1
+  U <- U / row_sums
+  U[!is.finite(U)] <- 0
+  U[U < 1e-12] <- 1e-12
+  sep2 <- as.matrix(dist(centers))^2
+  sep2[sep2 == 0] <- Inf
+  min_sep2 <- min(sep2)
+  if (!is.finite(min_sep2) || min_sep2 <= 0) {
+    return(Inf)
+  }
+  score <- sum(U * dist2) / (nrow(X) * min_sep2)
+  if (!is.finite(score)) {
+    Inf
+  } else {
+    score
+  }
+}
+
+modelsel$XB <- NA_real_
+for (i in seq_len(nrow(modelsel))) {
+  G <- modelsel$G[i]
+  Q <- modelsel$Q[i]
+  cur_loss <- Inf
+  res <- NULL
+  for (start in seq_len(randomstarts)) {
+    if (start == 1) {
+      init <- init_FERFRKM(X, G, Q, seed = seed, nstart_kmeans = kmeans_starts)
+    } else {
+      U_init <- randgenuc(I, G)
+      A_init <- rand_orthogonal(G, Q)
+      B_init <- t(t(A_init) %*% solve(t(U_init) %*% U_init) %*% t(U_init) %*% X)
+      init <- list(U = U_init, A = A_init, B = B_init)
+    }
+    res_cur <- tryCatch(
+      FERFRKM(
+        C = X,
+        K = K,
+        Pk = Pk,
+        Lk = Lk,
+        U = init$U,
+        A = init$A,
+        B = init$B,
+        lambda = modelsel$lambda[i],
+        gamma = modelsel$gamma[i],
+        max_iter = Inf,
+        tol = 1e-8
+      ),
+      error = function(e) NULL
+    )
+    if (is.null(res_cur)) {
+      next
+    }
+    if (cur_loss > res_cur$loss_function) {
+      res <- res_cur
+      cur_loss <- res$loss_function
+    }
+  }
+  if (!is.null(res)) {
+    modelsel$XB[i] <- compute_xie_beni(X, res$A %*% t(res$B), modelsel$gamma[i])
+  } else {
+    modelsel$XB[i] <- Inf
+  }
+  cat("Row ", i, " G: ", G, " Q: ", Q, " XB: ", modelsel$XB[i], "\n")
+}
+save(modelsel, file = "data/modelsel_plane_XB.RData")

@@ -15,9 +15,10 @@ randomstarts <- 5
 load("data/modelsel_plane.RData")
 modelsel[] <- lapply(modelsel, as.numeric)
 modelsel$loss[2] <- max(modelsel$loss[-2])
-preggq_int(modelsel$wdev, modelsel$G, modelsel$Q)
+# Select the number of dimensions of the subspace with objective elbow method.
+preggq_int(modelsel$wdev[13:17], modelsel$G[13:17], modelsel$Q[13:17])
 G <- 7
-Q <- 2
+Q <- 4
 I <- nrow(X)
 J <- ncol(X)
 # Refit best model
@@ -75,7 +76,7 @@ matplot(
   col = c("red","blue","darkgreen","orange"),
   xlab = "", ylab = ""
 )
-est_centroid_1 <- t(as.matrix(est_centroids[1,]))
+est_centroid_1 <- t(as.matrix(est_centroids[2,]))
 Ymr <- apply(est_centroid_1, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
 matlines(
   tt, Ymr, lwd = 1, lty = 2,
