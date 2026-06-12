@@ -1,7 +1,4 @@
-require(doParallel)
-require(parallel)
-require(foreach)
-require(fclust)
+require(mclust)
 require(clue)
 require(MASS)
 #
@@ -16,12 +13,12 @@ source("init_FERFRKM.R")
 source("make_folds.R")
 # Simulation preparation -----
 randomstarts <- 5
-randomstarts_cv <- 3
+randomstarts_cv <- 1
 kmeans_starts <- 20
 lambda_init <- 1 
 gamma_init <- 1
 # Set up dimensions and centroids
-I <- 100
+I <- 150
 J <- 101
 Q <- 2
 G <- 4
@@ -33,10 +30,10 @@ psi2_smooth <- function(t) {
   cos(3 + pi * t)
 }
 psi1_wiggly <- function(t) {
-  2 + cos(20 * t)
+  cos(20 * t)
 }
 psi2_wiggly <- function(t) {
-  1 + sin(10 * t)
+  sin(20 * t)
 }
 # True A matrix (orthogonal)
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
@@ -44,6 +41,7 @@ A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 t_grid <- seq(-1, 1, length.out = J)
 f1 <- psi1_wiggly(t_grid)
 f2 <- psi2_wiggly(t_grid)
+sig <- 0.01 # (3 s-s, 0.3 for s-w, and 0.01 w-w)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -51,15 +49,9 @@ K <- res$K
 Pk <- res$Pk
 Lk <- res$Lk
 #
-simulation_results <- data.frame(
-  lambda_best = numeric(250),
-  gamma_best = numeric(250),
-  FARI = numeric(250),
-  SSQerr = numeric(250)
-)
 IJ <- diag(J)
 # Monte Carlo simulations
-for(iter in c(1:3)){
+for(iter in c(13)){
   set.seed(iter)
   # Simulate labels 
   dummy_labels <- t(rmultinom(
@@ -69,7 +61,7 @@ for(iter in c(1:3)){
   cluster_labels <- max.col(dummy_labels, ties.method = "first")
   # Draw data from multivariate normal distribution
   X <- t(sapply(cluster_labels, function(lbl){
-    mvrnorm(1, mu = curves[, lbl], Sigma = IJ)
+    mvrnorm(1, mu = curves[, lbl], Sigma = sig*IJ)
   }
   ))
   # Cross validation
@@ -92,8 +84,6 @@ for(iter in c(1:3)){
     ),
     type = "output"
   ))
-  simulation_results$lambda_best[iter] <- cv_res$par[1]
-  simulation_results$gamma_best[iter] <- cv_res$par[2]
   # Fit the best combination:
   cur_loss <- Inf
   for(start in seq_len(randomstarts)){
@@ -128,20 +118,25 @@ for(iter in c(1:3)){
       cur_loss <- res$loss_function
     }
   }
-  simulation_results$FARI[iter] <- ARI.F(cluster_labels,res$U)
+  cluster_labels_est <- max.col(res$U, ties.method = "first")
+  ARI <- adjustedRandIndex(cluster_labels,cluster_labels_est)
   ABp <- res$A %*% t(res$B)
-  tcurves <- t(curves)
-  # Permute the estimated curves to match the true curves
-  perm <- perm_hungarian_fast(tcurves, ABp, J)
-  simulation_results$SSQerr[iter] <- sum((ABp[perm,] - t(curves))^2)
-  cat("End Monte Carlo Simulation: ", iter, " Lambda* ", simulation_results$lambda_best[iter], " Gamma* ", simulation_results$gamma_best[iter],
-    "FARI: ", simulation_results$FARI[iter], " sSqErr: ", simulation_results$SSQerr[iter], "\n")
+  assign(paste0("res",iter),list(
+    i = iter,
+    gamma_best = cv_res$par[2],
+    lambda_best = cv_res$par[1],
+    ARI = ARI,
+    est_centroids = ABp
+  ))
+  cat("End Monte Carlo Simulation: ", iter, " Lambda* ", cv_res$par[1], " Gamma* ", cv_res$par[2],
+    "ARI: ", ARI, "\n")
 }
-# Results
-mean(simulation_results$FARI)
-sd(simulation_results$FARI)
-mean(simulation_results$SSQerr)
-sd(simulation_results$SSQerr)
+# save(res1, res2, res3, file = "var.RData")
+# Permute the estimated curves to match the true curves
+perm <- perm_hungarian_fast(t(curves), res1$est_centroids, J)
+sum((res1$est_centroids[perm,] - t(curves))^2)
+sd((res1$est_centroids[perm,] - t(curves))^2)
+sum((res1$est_centroids[perm,] - t(curves))^2)
 # Plot the centroids and their reconstruction for one iteration ----
 tt <- seq(min(t_grid), max(t_grid), length.out = 400)
 Ym <- apply(t(curves), 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
@@ -150,7 +145,7 @@ matplot(
   col = c("red","blue","darkgreen","orange"),
   xlab = "", ylab = ""
 )
-Ymr <- apply(ABp[perm,], 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+Ymr <- apply(res1$est_centroids[perm,], 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
 matlines(
   tt, Ymr, lwd = 1, lty = 2,
   col = c("red","blue","darkgreen","orange")

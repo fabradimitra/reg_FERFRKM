@@ -111,6 +111,7 @@ CV_FERFRKM <- function(
     nstart_kmeans = nstart_kmeans,
     seed = seed,
     max_iter = max_iter,
+    control = list(maxit = 100),
     tol = tol
     )
 }

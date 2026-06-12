@@ -282,3 +282,19 @@ cv_ferfrkm_grid <- function(
 #   ncores = 4
 # )
 # cv_res$best
+
+# smooth smooth
+psi1_smooth <- function(t) {
+  t + sin(pi * t) * exp(-t)
+}
+psi2_smooth <- function(t) {
+  0.7*t + sin(pi * t) * exp(-t) #cos(3 + pi * t)
+}
+psi1_wiggly <- function(t) {
+  t + sin(18 * t) * exp(-1.7*t)
+}
+psi2_wiggly <- function(t) {
+  t + sin(20 * t) * exp(-1.7*t)
+}
+# True A matrix (orthogonal)
+A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
