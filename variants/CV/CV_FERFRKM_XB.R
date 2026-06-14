@@ -79,11 +79,10 @@ CV_FERFRKM <- function(
       U_valid <- exp(-dist2_valid / vars[2])
       U_valid <- U_valid / rowSums(U_valid)
       U_valid[U_valid < 1e-12] <- 1e-12
-      D_valid <- diag(sqrt(colSums(U_valid)))
-      D2_valid <- D_valid^2
-      Cbar_valid <- diag(1/diag(D2_valid)) %*% t(U_valid) %*% X_valid
-      cur_score <- loss_function(U_valid, X_valid, Cbar_valid, D_valid,
-         fit$A, fit$B, K, vars[1], vars[2])$wdev
+      sep2 <- as.matrix(dist(centers))^2
+      sep2[sep2 == 0] <- Inf
+      min_sep2 <- min(sep2)
+      cur_score <- sum(U_valid * dist2_valid) / (nrow(X_valid) * min_sep2)
       if (is.null(cur_score)|is.na(cur_score)) {
           next
       }
@@ -92,7 +91,7 @@ CV_FERFRKM <- function(
       }
       }
       fold_scores[fold_idx] <- score_fin
-      cat("Fold ", fold_idx, "Score ", score_fin)
+      cat("Fold ", fold_idx, "Xie-Beni score ", score_fin)
     }
     mean(fold_scores)
   }

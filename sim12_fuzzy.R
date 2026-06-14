@@ -15,10 +15,10 @@ source("make_folds.R")
 randomstarts <- 5
 randomstarts_cv <- 1
 kmeans_starts <- 20
-lambda_init <- 1 
+lambda_init <- 1
 gamma_init <- 1
 # Set up dimensions and centroids
-I <- 150
+I <- 50
 J <- 101
 Q <- 2
 G <- 4
@@ -30,18 +30,18 @@ psi2_smooth <- function(t) {
   cos(3 + pi * t)
 }
 psi1_wiggly <- function(t) {
-  cos(20 * t)
+  sin(10 * t)
 }
 psi2_wiggly <- function(t) {
-  sin(20 * t)
+  cos(10 * t)
 }
 # True A matrix (orthogonal)
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(-1, 1, length.out = J)
-f1 <- psi1_wiggly(t_grid)
-f2 <- psi2_wiggly(t_grid)
-sig <- 0.01 # (3 s-s, 0.3 for s-w, and 0.01 w-w)
+f1 <- psi1_smooth(t_grid)
+f2 <- psi2_smooth(t_grid)
+sig <- 3 # (4 s-s, 0.4 for s-w, and 0.04 w-w)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -51,7 +51,7 @@ Lk <- res$Lk
 #
 IJ <- diag(J)
 # Monte Carlo simulations
-for(iter in c(13)){
+for(iter in c(1)){
   set.seed(iter)
   # Simulate labels 
   dummy_labels <- t(rmultinom(
@@ -65,7 +65,7 @@ for(iter in c(13)){
   }
   ))
   # Cross validation
-  invisible(capture.output(
+    invisible(capture.output(
     cv_res <- CV_FERFRKM(
       Xtr = X,
       G = G,
@@ -73,8 +73,8 @@ for(iter in c(13)){
       K = K,
       Pk = Pk,
       Lk = Lk,
-      lambda_init = lambda_init,
-      gamma_init = gamma_init,
+      lambda_init = 1,
+      gamma_init = 1,
       folds = 5,
       max_iter = Inf,
       tol = 1e-8,
@@ -84,6 +84,8 @@ for(iter in c(13)){
     ),
     type = "output"
   ))
+  lambda_best <- cv_res$par[1]
+  gamma_best <- cv_res$par[2]
   # Fit the best combination:
   cur_loss <- Inf
   for(start in seq_len(randomstarts)){
@@ -96,7 +98,7 @@ for(iter in c(13)){
       init <- list(U=U_init, A=A_init, B=B_init)
     }
     # Run FERFRKM algorithm
-    res_cur <- tryCatch(
+    invisible(capture.output(res_cur <- tryCatch(
       FERFRKM(C=X,
               K=K,
               Pk=Pk,
@@ -104,12 +106,12 @@ for(iter in c(13)){
               U=init$U,
               A=init$A,
               B=init$B,
-              lambda= cv_res$par[1],
-              gamma = cv_res$par[2],
+              lambda= lambda_best,
+              gamma = gamma_best,
               max_iter = Inf,
               tol = 1e-8),
           error = function(e) NULL
-        )
+        )))
       if (is.null(res_cur)) {
           next
         }
@@ -123,12 +125,12 @@ for(iter in c(13)){
   ABp <- res$A %*% t(res$B)
   assign(paste0("res",iter),list(
     i = iter,
-    gamma_best = cv_res$par[2],
-    lambda_best = cv_res$par[1],
+    gamma_best = gamma_best,
+    lambda_best = lambda_best,
     ARI = ARI,
     est_centroids = ABp
   ))
-  cat("End Monte Carlo Simulation: ", iter, " Lambda* ", cv_res$par[1], " Gamma* ", cv_res$par[2],
+  cat("End Monte Carlo Simulation: ", iter, " Lambda* ", lambda_best, " Gamma* ", gamma_best,
     "ARI: ", ARI, "\n")
 }
 # save(res1, res2, res3, file = "var.RData")
@@ -147,7 +149,7 @@ matplot(
 )
 Ymr <- apply(res1$est_centroids[perm,], 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
 matlines(
-  tt, Ymr, lwd = 1, lty = 2,
+  tt, Ymr, lwd = 4, lty = 2,
   col = c("red","blue","darkgreen","orange")
 )
 legend(
@@ -158,7 +160,9 @@ legend(
 )
 cols <- c("red", "blue", "darkgreen", "orange")[cluster_labels]
 Y <- t(apply(X, 1, function(y) splinefun(t_grid, y, method = "natural")(tt)))
+
 matplot(tt, t(Y), type = "l", lty = 1, col = cols, lwd = 2,
         xlab = "t", ylab = "spline value")
 legend("bottomright", legend = paste("label", 1:4),
        col = c("red","blue","darkgreen","orange"), lwd = 2, bty = "n")
+
