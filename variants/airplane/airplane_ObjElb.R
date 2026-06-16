@@ -159,7 +159,7 @@ Ym <- apply(centroid_4, 1, function(y) splinefun(t_grid, y, method = "natural")(
 matplot(
   tt, Ym, type = "l", lwd = 2, lty = 1,
   col = c("darkgreen"),
-  xlab = "", ylab = "", ylim = c(-1.5,2),
+  xlab = "", ylab = "", ylim = c(-2,2),
   main = "F14 wing open"
 )
 est_centroid_4 <- t(as.matrix(est_centroids[2,]))
@@ -247,6 +247,6 @@ matlines(
   tt, Ymr, lwd = 1, lty = 1,
   col = c("black")
 )
-legend("bottom", legend = c("T. F-22","T. F-14","Est."),
+legend("bottom", legend = c("T. F-22","T. F-14","Est. Centroid"),
        col = c("steelblue2","hotpink3","black"), lwd = 2, bty = "n")
 
