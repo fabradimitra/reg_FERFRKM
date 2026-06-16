@@ -23,13 +23,8 @@ Pk <- res_kspline$Pk
 Lk <- res_kspline$Lk
 I <- nrow(X)
 J <- ncol(X)
-
 # load model selection
-load("data/modelsel_plane.RData")
-modelsel[] <- lapply(modelsel, as.numeric)
-modelsel$loss[2] <- max(modelsel$loss[-2])
 load("data/modelsel_plane_XB.RData")
-modelsel$XB[2] <- max(modelsel$XB[-2])
 best_idx <- which.min(modelsel$XB)
 G <- modelsel$G[best_idx]
 Q <- modelsel$Q[best_idx]
@@ -69,7 +64,7 @@ for (start in seq_len(randomstarts)) {
     cur_loss <- res$loss_function
   }
 }
-pred_class <- max.col(res$U[,c(2,4,6,1,3,5)], ties.method = "first")
+pred_class <- max.col(res$U, ties.method = "first")
 conf_mat_raw <- table(True = tcm, Predicted = pred_class)
 
 plot_confusion_matrix <- function(mat, main) {
@@ -208,6 +203,8 @@ matlines(
   tt, Yharriers, lwd = 2, lty = 2,
   col = c("black")
 )
+legend("bottom", legend = c("Harriers 1","Harriers 2","T. centroids"),
+       col = c("blue","red","black"), lwd = 2, bty = "n")
 harriers_1 <- X[which((tcm == 5)&(pred_class==5)),]
 ycurvesharriers_1 <- apply(harriers_1, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
 matplot(

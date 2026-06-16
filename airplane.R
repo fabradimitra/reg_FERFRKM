@@ -13,8 +13,6 @@ source("preggq_int.R")
 randomstarts <- 5
 # load model selection
 load("data/modelsel_plane.RData")
-modelsel[] <- lapply(modelsel, as.numeric)
-modelsel$loss[2] <- max(modelsel$loss[-2])
 # Select the number of dimensions of the subspace with objective elbow method.
 preggq_int(modelsel$wdev, modelsel$G, modelsel$Q)
 G <- 5

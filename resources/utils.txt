@@ -346,3 +346,23 @@ matlines(
   tt, Ymr, lwd = 2, lty = 2,
   col = c("brown")
 )
+
+  invisible(capture.output(
+    cv_res <- CV_FERFRKM(
+      Xtr = X,
+      G = G,
+      Q = Q,
+      K = K,
+      Pk = Pk,
+      Lk = Lk,
+      lambda_init = 1,
+      gamma_init = 1,
+      folds = 5,
+      max_iter = Inf,
+      tol = 1e-8,
+      nstart_kmeans = kmeans_starts,
+      seed = iter,
+      randomstarts = randomstarts_cv
+    ),
+    type = "output"
+  ))

@@ -106,7 +106,7 @@ for(i in nrow(gridGQ)){
     "within-cluster deviance: ", gridGQ[i,5], " FARI: ", gridGQ[i,6] ," loss: ", gridGQ[i,7],"\n")
   save.image("data/fit_plane.RData")
 }
-load("data/fit_plane.RData")
+load("data/modelsel_plane.RData")
 # Computing the Xie-Beni index
 compute_xie_beni <- function(X, centers, gamma) {
   cnorm2 <- rowSums(X^2)
@@ -132,7 +132,7 @@ compute_xie_beni <- function(X, centers, gamma) {
     score
   }
 }
-
+# Calculate Xie-Beni index
 modelsel$XB <- NA_real_
 for (i in seq_len(nrow(modelsel))) {
   G <- modelsel$G[i]
