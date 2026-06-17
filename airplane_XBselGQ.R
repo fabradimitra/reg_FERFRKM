@@ -1,4 +1,5 @@
 require(clue)
+require(mclust)
 source("perm_hungarian_fast.R")
 source("kspline.R")
 source("randgenuc.R")
@@ -26,8 +27,8 @@ J <- ncol(X)
 # load model selection
 load("data/modelsel_plane_XB.RData")
 best_idx <- which.min(modelsel$XB)
-G <- modelsel$G[best_idx]
-Q <- modelsel$Q[best_idx]
+G <- 8#modelsel$G[best_idx]
+Q <- 7#modelsel$Q[best_idx]
 # Refit best model
 cur_loss <- Inf
 for (start in seq_len(randomstarts)) {
@@ -96,6 +97,8 @@ plot_confusion_matrix <- function(mat, main) {
 }
 par(mfrow=c(1,1))
 plot_confusion_matrix(conf_mat_raw, "Confusion matrix")
+cluster_labels_est <- max.col(res$U, ties.method = "first")
+adjustedRandIndex(tcm,cluster_labels_est)
 est_centroids <- res$A %*% t(res$B)
 centroid_1 <- t(as.matrix(colMeans(X[which(tcm == 1),])))
 centroid_2 <- t(as.matrix(colMeans(X[which(tcm == 2),])))
@@ -108,7 +111,6 @@ true_centroids <- rbind(centroid_1,centroid_2,centroid_3,centroid_4,centroid_5,c
 # Plot the centroids and their reconstruction for one iteration ----
 tt <- seq(1, 144, length.out = 400)
 t_grid <- c(1:J)
-
 # Plot curves of Mirage and Eurofighter classes:
 par(mfrow=c(1,2))
 Mirage <- X[which(tcm == 1),]
