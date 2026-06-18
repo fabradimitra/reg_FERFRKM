@@ -1,6 +1,7 @@
 require(mclust)
 require(clue)
 require(MASS)
+require(dirmult)
 #
 source("kspline.R")
 source("randgenuc.R")
@@ -16,7 +17,7 @@ randomstarts <- 5
 randomstarts_cv <- 1
 kmeans_starts <- 20
 lambda_init <- 1
-gamma_init <- 1
+gamma_init <- 3
 # Set up dimensions and centroids
 I <- 50
 J <- 101
@@ -37,11 +38,12 @@ psi2_wiggly <- function(t) {
 }
 # True A matrix (orthogonal)
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
+alpha <- c(1,1,1,1)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(-1, 1, length.out = J)
 f1 <- psi1_smooth(t_grid)
 f2 <- psi2_smooth(t_grid)
-sig <- 3 # (4 s-s, 0.4 for s-w, and 0.04 w-w)
+sig <- 1 # (4 s-s, 0.4 for s-w, and 0.04 w-w)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -54,18 +56,23 @@ IJ <- diag(J)
 for(iter in c(1)){
   set.seed(iter)
   # Simulate labels 
-  dummy_labels <- t(rmultinom(
-  n = I, size = 1, 
-  prob = rep(1/G,G)
-  ))
-  cluster_labels <- max.col(dummy_labels, ties.method = "first")
+  # dummy_labels <- t(rmultinom(
+  # n = I, size = 1, 
+  # prob = rep(1/G,G)
+  # ))
+  W <- rdirichlet(I, alpha)
+  cluster_labels <- max.col(W, ties.method = "first")
   # Draw data from multivariate normal distribution
-  X <- t(sapply(cluster_labels, function(lbl){
-    mvrnorm(1, mu = curves[, lbl], Sigma = sig*IJ)
-  }
-  ))
+  # X <- t(sapply(cluster_labels, function(lbl){
+  #   mvrnorm(1, mu = curves[, lbl], Sigma = sig*IJ)
+  # }
+  # ))
+  X <- t(apply(W,1,function(w){
+  mu <- curves %*% w
+  mvrnorm(1, mu = mu, Sigma = sig*IJ)
+  }))
   # Cross validation
-    invisible(capture.output(
+  invisible(capture.output(
     cv_res <- CV_FERFRKM(
       Xtr = X,
       G = G,
@@ -84,8 +91,8 @@ for(iter in c(1)){
     ),
     type = "output"
   ))
-  lambda_best <- cv_res$par[1]
-  gamma_best <- cv_res$par[2]
+  lambda_best <- lambda_init#cv_res$par[1]
+  gamma_best <- gamma_init#cv_res$par[2]
   # Fit the best combination:
   cur_loss <- Inf
   for(start in seq_len(randomstarts)){
@@ -123,22 +130,22 @@ for(iter in c(1)){
   cluster_labels_est <- max.col(res$U, ties.method = "first")
   ARI <- adjustedRandIndex(cluster_labels,cluster_labels_est)
   ABp <- res$A %*% t(res$B)
-  assign(paste0("res",iter),list(
+  out <- list(
     i = iter,
     gamma_best = gamma_best,
     lambda_best = lambda_best,
     ARI = ARI,
     est_centroids = ABp
-  ))
+  )
+  perm <- perm_hungarian_fast(t(curves), out$est_centroids, J)
+  mean((W-res$U[,perm])^2)
   cat("End Monte Carlo Simulation: ", iter, " Lambda* ", lambda_best, " Gamma* ", gamma_best,
     "ARI: ", ARI, "\n")
 }
-# save(res1, res2, res3, file = "var.RData")
 # Permute the estimated curves to match the true curves
-perm <- perm_hungarian_fast(t(curves), res1$est_centroids, J)
-sum((res1$est_centroids[perm,] - t(curves))^2)
-sd((res1$est_centroids[perm,] - t(curves))^2)
-sum((res1$est_centroids[perm,] - t(curves))^2)
+sum((out$est_centroids[perm,] - t(curves))^2)
+sd((out$est_centroids[perm,] - t(curves))^2)
+sum((out$est_centroids[perm,] - t(curves))^2)
 # Plot the centroids and their reconstruction for one iteration ----
 tt <- seq(min(t_grid), max(t_grid), length.out = 400)
 Ym <- apply(t(curves), 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
@@ -147,7 +154,7 @@ matplot(
   col = c("red","blue","darkgreen","orange"),
   xlab = "", ylab = ""
 )
-Ymr <- apply(res1$est_centroids[perm,], 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+Ymr <- apply(out$est_centroids[perm,], 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
 matlines(
   tt, Ymr, lwd = 4, lty = 2,
   col = c("red","blue","darkgreen","orange")
