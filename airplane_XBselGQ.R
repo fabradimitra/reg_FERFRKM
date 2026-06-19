@@ -27,8 +27,8 @@ J <- ncol(X)
 # load model selection
 load("data/modelsel_plane_XB.RData")
 best_idx <- which.min(modelsel$XB)
-G <- 8#modelsel$G[best_idx]
-Q <- 7#modelsel$Q[best_idx]
+G <- modelsel$G[best_idx]
+Q <- modelsel$Q[best_idx]
 # Refit best model
 cur_loss <- Inf
 for (start in seq_len(randomstarts)) {
@@ -83,8 +83,8 @@ plot_confusion_matrix <- function(mat, main) {
     yaxs = "i"
   )
   title(ylab = "True")
-  mtext(main, side = 1, line = 3)
-  mtext("Predicted", side = 3, line = 2)
+  #mtext(main, side = 1, line = 3)
+  mtext("Predicted", side = 3, line = 3)
   abline(v = seq(0.5, nc + 0.5, by = 1), h = seq(0.5, nr + 0.5, by = 1), col = "grey85")
   box()
   axis(3, at = seq_len(nc), labels = colnames(mat))
@@ -111,6 +111,14 @@ true_centroids <- rbind(centroid_1,centroid_2,centroid_3,centroid_4,centroid_5,c
 # Plot the centroids and their reconstruction for one iteration ----
 tt <- seq(1, 144, length.out = 400)
 t_grid <- c(1:J)
+# Plot all curves
+Y <- apply(X, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+matplot(
+  tt, Y, type = "l", lwd = 1, lty = 1,
+  col = c("black"),
+  xlab = "", ylab = "",
+  main = "Airplanes dataset"
+)
 # Plot curves of Mirage and Eurofighter classes:
 par(mfrow=c(1,2))
 Mirage <- X[which(tcm == 1),]
@@ -152,7 +160,7 @@ matlines(
   tt, Ymr, lwd = 1, lty = 1,
   col = c("black")
 )
-legend("bottom", legend = c("T. Mirage","T. Eurofighter","Est. centroid"),
+legend("bottomright", legend = c("T. Mirage","T. Eurofighter","Est. centroid"),
        col = c("red","blue","black"), lwd = 2, bty = "n")
 # Centroid 3 ----
 Ym <- apply(centroid_3, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
@@ -168,12 +176,14 @@ matlines(
   tt, Ymr, lwd = 2, lty = 2,
   col = c("black")
 )
+legend("bottomright", legend = c("T. F14 w. c.","Est. centroid"),
+       col = c("gold","black"), lwd = 2, bty = "n")
 # Centroid 4 ----
 Ym <- apply(centroid_4, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
 matplot(
   tt, Ym, type = "l", lwd = 2, lty = 1,
   col = c("darkgreen"),
-  xlab = "", ylab = "", ylim = c(-1.5,2),
+  xlab = "", ylab = "", ylim = c(-2,2),
   main = "F14 wing open"
 )
 est_centroid_4 <- t(as.matrix(est_centroids[1,]))
@@ -182,6 +192,8 @@ matlines(
   tt, Ymr, lwd = 2, lty = 2,
   col = c("black")
 )
+legend("bottomright", legend = c("T. F14 w. o.","Est. centroid"),
+       col = c("darkgreen","black"), lwd = 2, bty = "n")
 # Centroid 5 ----
 # plot harrier curves:
 par(mfrow = c(1,2))
@@ -205,7 +217,7 @@ matlines(
   tt, Yharriers, lwd = 2, lty = 2,
   col = c("black")
 )
-legend("bottom", legend = c("Harriers 1","Harriers 2","T. centroids"),
+legend("bottom", legend = c("Harriers 1","Harriers 2","T. centroid"),
        col = c("blue","red","black"), lwd = 2, bty = "n")
 harriers_1 <- X[which((tcm == 5)&(pred_class==5)),]
 ycurvesharriers_1 <- apply(harriers_1, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
@@ -276,5 +288,6 @@ matlines(
   tt, Ymr, lwd = 1, lty = 1,
   col = c("black")
 )
-legend("bottom", legend = c("T. F-22","T. F-14","Est."),
+legend("bottom", legend = c("T. F-22","T. F-14","Est. Centroid"),
        col = c("steelblue2","hotpink3","black"), lwd = 2, bty = "n")
+
