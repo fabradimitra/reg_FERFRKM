@@ -91,8 +91,8 @@ for(iter in c(1)){
     ),
     type = "output"
   ))
-  lambda_best <- lambda_init#cv_res$par[1]
-  gamma_best <- gamma_init#cv_res$par[2]
+  lambda_best <- cv_res$par[1]
+  gamma_best <- cv_res$par[2]
   # Fit the best combination:
   cur_loss <- Inf
   for(start in seq_len(randomstarts)){
