@@ -38,12 +38,12 @@ psi2_wiggly <- function(t) {
 }
 # True A matrix (orthogonal)
 A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
-alpha <- c(1,1,1,1)
+# alpha <- c(1,1,1,1)
 # Evaluate the curves at a grid of observed points
 t_grid <- seq(-1, 1, length.out = J)
 f1 <- psi1_smooth(t_grid)
 f2 <- psi2_smooth(t_grid)
-sig <- 1 # (4 s-s, 0.4 for s-w, and 0.04 w-w)
+sig <- 3 # (4 s-s, 0.4 for s-w, and 0.04 w-w)
 # Cluster centroids
 curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
 res <- kspline(t_grid)
@@ -56,21 +56,23 @@ IJ <- diag(J)
 for(iter in c(1)){
   set.seed(iter)
   # Simulate labels 
-  # dummy_labels <- t(rmultinom(
-  # n = I, size = 1, 
-  # prob = rep(1/G,G)
-  # ))
-  W <- rdirichlet(I, alpha)
-  cluster_labels <- max.col(W, ties.method = "first")
-  # Draw data from multivariate normal distribution
-  # X <- t(sapply(cluster_labels, function(lbl){
-  #   mvrnorm(1, mu = curves[, lbl], Sigma = sig*IJ)
-  # }
-  # ))
-  X <- t(apply(W,1,function(w){
-  mu <- curves %*% w
-  mvrnorm(1, mu = mu, Sigma = sig*IJ)
-  }))
+  # Draw data from a mixture of Gaussian distributions
+  dummy_labels <- t(rmultinom(
+    n = I, size = 1, 
+    prob = rep(1/G,G)
+  ))
+  cluster_labels <- max.col(dummy_labels, ties.method = "first")
+  X <- t(sapply(cluster_labels, function(lbl){
+    mvrnorm(1, mu = curves[, lbl], Sigma = sig*IJ)
+  }
+  ))
+  # PMM
+  # W <- rdirichlet(I, alpha)
+  # cluster_labels <- max.col(W, ties.method = "first")
+  # X <- t(apply(W,1,function(w){
+  # mu <- curves %*% w
+  # mvrnorm(1, mu = mu, Sigma = sig*IJ)
+  # }))
   # Cross validation
   invisible(capture.output(
     cv_res <- CV_FERFRKM(
@@ -80,8 +82,8 @@ for(iter in c(1)){
       K = K,
       Pk = Pk,
       Lk = Lk,
-      lambda_init = 1,
-      gamma_init = 1,
+      lambda_init = lambda_init,
+      gamma_init = gamma_init,
       folds = 5,
       max_iter = Inf,
       tol = 1e-8,
