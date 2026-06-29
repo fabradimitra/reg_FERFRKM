@@ -29,29 +29,17 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
   cnorm2 <- rowSums(C*C) # vector of lenght J having squared norm of c_i as element
   IJ <- diag(J)
   IG <- diag(G)
+  D <- diag(sqrt(colSums(U)))
+  D2 <- D^2
+  Cbar <- diag(1/diag(D2))%*%t(U)%*%C
+  #
   loss_function_curr <- Inf
   dif <- Inf
   iter <- 0
   while(dif > tol & iter < max_iter){
     iter <- iter + 1
-    # Update U
-    BAp <- B %*% t(A)
-    aBnorm2 <- colSums(BAp*BAp) # vector of lenght G having squared norm of B a_g as element
-    distxmg2 <- outer(cnorm2,aBnorm2, "+") - 2 * (C %*% BAp) # matrix of dimension IxG ||c_i - B a_g||^2
-    if(gamma==0){
-      U <- matrix(0,nrow = I, ncol = G)
-      U[cbind(seq_len(I), max.col(-distxmg2, ties.method = "first"))] <- 1
-      U[U<1e-12]<-1e-12
-    }else{
-      U <- exp(-distxmg2/gamma)
-      U <- U/matrix(rowSums(U),I,G)
-      U[U<1e-12]<-1e-12
-    }
-    #######################################################################################
+    A <- A/max(A)
     # Update B
-    D <- diag(sqrt(colSums(U)))
-    D2 <- D^2
-    Cbar <- diag(1/diag(D2)) %*% t(U) %*% C
     B <- solve(kronecker(t(A)%*%D2%*%A,IJ)+lambda*kronecker(t(A)%*%A,K))%*%c(t(Cbar)%*%D2%*%A)
     B <- matrix(B, nrow = J, ncol = Q)
     #######################################################################################
@@ -59,13 +47,32 @@ FERFRKM <- function(C,K,Pk,Lk,U,A,B,lambda,gamma,max_iter = Inf,tol = 1e-6){
     A <- solve(kronecker(t(B)%*%B,D2)+lambda*kronecker(t(B)%*%K%*%B,IG))%*%c(D2%*%Cbar%*%B)
     A <- matrix(A, nrow = G, ncol = Q)
     #######################################################################################
+    # Update U
+    distxmg2 <- t(matrix(rowSums((C%x%c(rep(1,G))-c(rep(1,I))%x%(A%*%t(B)))^2),G,I))
+    if(gamma==0){
+      Un <- matrix(0,nrow = I, ncol = G)
+      Un[cbind(seq_len(I), max.col(-distxmg2, ties.method = "first"))] <- 1
+      su <- colSums(Un)
+      if(!any(su==0)){U <- Un}
+    }else{
+      distxmg2 <- t(apply(distxmg2,1,function(x){x<-x-min(x)}))
+      U <- exp(-distxmg2/gamma)
+      U <- U/matrix(rowSums(U),I,G)
+    }
+    D <- diag(sqrt(colSums(U)))
+    D2 <- D^2
+    Cbar <- diag(1/diag(D2))%*%t(U)%*%C
+    #######################################################################################
     # Compute loss function and check convergence
     loss_function_new <- loss_function(U, C, Cbar, D, A, B, K, lambda, gamma)
     dif <-  loss_function_curr - loss_function_new$lossp
     loss_function_curr <- loss_function_new$lossp
+    if(iter%%10==0){
     cat("Iteration: ", iter, " Loss pen: ", loss_function_curr, " Loss: ", loss_function_new$loss,
     " Difference: ", dif, " Norm B: ", norm(B, type = "F")," Norm A: ", norm(A, type = "F"), "\n")
-    }
+    }}
+  cat("Iteration: ", iter, " Loss pen: ", loss_function_curr, " Loss: ", loss_function_new$loss,
+      " Difference: ", dif, " Norm B: ", norm(B, type = "F")," Norm A: ", norm(A, type = "F"), "\n")
   return(list(U = U, A = A, B = B, Cbar = Cbar,
     loss_function = loss_function_curr, 
     loss_function_unpen = loss_function_new$loss,

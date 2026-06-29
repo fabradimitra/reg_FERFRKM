@@ -43,9 +43,9 @@ A <- matrix(c(1,0,1,-1,0,1,1,1), nrow= G, ncol = Q)
 t_grid <- seq(-1, 1, length.out = J)
 f1 <- psi1_smooth(t_grid)
 f2 <- psi2_smooth(t_grid)
-sig <- 3 # (4 s-s, 0.4 for s-w, and 0.04 w-w)
-# Cluster centroids
-curves <- apply(A, 1, function(a) a[1] * f1 + a[2] * f2)
+sig <- 1
+B <- cbind(f1,f2)
+Curves <- A %*% t(B)
 res <- kspline(t_grid)
 K <- res$K
 Pk <- res$Pk
@@ -57,22 +57,15 @@ for(iter in c(1)){
   set.seed(iter)
   # Simulate labels 
   # Draw data from a mixture of Gaussian distributions
-  dummy_labels <- t(rmultinom(
+  Dummy_labels <- t(rmultinom(
     n = I, size = 1, 
     prob = rep(1/G,G)
   ))
-  cluster_labels <- max.col(dummy_labels, ties.method = "first")
+  cluster_labels <- max.col(Dummy_labels, ties.method = "first")
   X <- t(sapply(cluster_labels, function(lbl){
-    mvrnorm(1, mu = curves[, lbl], Sigma = sig*IJ)
+    mvrnorm(1, mu = Curves[lbl,], Sigma = sig*IJ)
   }
   ))
-  # PMM
-  # W <- rdirichlet(I, alpha)
-  # cluster_labels <- max.col(W, ties.method = "first")
-  # X <- t(apply(W,1,function(w){
-  # mu <- curves %*% w
-  # mvrnorm(1, mu = mu, Sigma = sig*IJ)
-  # }))
   # Cross validation
   invisible(capture.output(
     cv_res <- CV_FERFRKM(
@@ -107,23 +100,17 @@ for(iter in c(1)){
       init <- list(U=U_init, A=A_init, B=B_init)
     }
     # Run FERFRKM algorithm
-    invisible(capture.output(res_cur <- tryCatch(
-      FERFRKM(C=X,
-              K=K,
-              Pk=Pk,
-              Lk=Lk,
-              U=init$U,
-              A=init$A,
-              B=init$B,
-              lambda= lambda_best,
-              gamma = gamma_best,
-              max_iter = Inf,
-              tol = 1e-8),
-          error = function(e) NULL
-        )))
-      if (is.null(res_cur)) {
-          next
-        }
+    res_cur <- FERFRKM(C=X,
+                      K=K,
+                      Pk=Pk,
+                      Lk=Lk,
+                      U=init$U,
+                      A=init$A,
+                      B=init$B,
+                      lambda= lambda_best,
+                      gamma = gamma_best,
+                      max_iter = Inf,
+                      tol = 1e-8)
     if(cur_loss>res_cur$loss_function){
       res <- res_cur
       cur_loss <- res$loss_function
@@ -139,18 +126,18 @@ for(iter in c(1)){
     ARI = ARI,
     est_centroids = ABp
   )
-  perm <- perm_hungarian_fast(t(curves), out$est_centroids, J)
-  mean((W-res$U[,perm])^2)
+  perm <- perm_hungarian_fast(Curves, out$est_centroids, J)
+  mean((Dummy_labels-res$U[,perm])^2)
   cat("End Monte Carlo Simulation: ", iter, " Lambda* ", lambda_best, " Gamma* ", gamma_best,
     "ARI: ", ARI, "\n")
 }
 # Permute the estimated curves to match the true curves
-sum((out$est_centroids[perm,] - t(curves))^2)
-sd((out$est_centroids[perm,] - t(curves))^2)
-sum((out$est_centroids[perm,] - t(curves))^2)
+sum((out$est_centroids[perm,] - Curves)^2)
+sd((out$est_centroids[perm,] - Curves)^2)
+sum((out$est_centroids[perm,] - Curves)^2)
 # Plot the centroids and their reconstruction for one iteration ----
 tt <- seq(min(t_grid), max(t_grid), length.out = 400)
-Ym <- apply(t(curves), 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
+Ym <- apply(Curves, 1, function(y) splinefun(t_grid, y, method = "natural")(tt))
 matplot(
   tt, Ym, type = "l", lwd = 1, lty = 1,
   col = c("red","blue","darkgreen","orange"),

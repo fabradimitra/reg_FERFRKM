@@ -14,7 +14,7 @@ source("preggq_int.R")
 randomstarts <- 5
 seed <- 123
 kmeans_starts <- 20
-
+#
 # load data
 load("data/Plane.RData")
 X <- scale(X, center = TRUE, scale = FALSE)
@@ -41,25 +41,19 @@ for (start in seq_len(randomstarts)) {
     init <- list(U = U_init, A = A_init, B = B_init)
   }
   # Run FERFRKM algorithm
-  res_cur <- tryCatch(
-    FERFRKM(
-      C = X,
-      K = K,
-      Pk = Pk,
-      Lk = Lk,
-      U = init$U,
-      A = init$A,
-      B = init$B,
-      lambda = modelsel$lambda[best_idx],
-      gamma = modelsel$gamma[best_idx],
-      max_iter = Inf,
-      tol = 1e-8
-    ),
-    error = function(e) NULL
-  )
-  if (is.null(res_cur)) {
-    next
-  }
+  res_cur <- FERFRKM(
+    C = X,
+    K = K,
+    Pk = Pk,
+    Lk = Lk,
+    U = init$U,
+    A = init$A,
+    B = init$B,
+    lambda = modelsel$lambda[best_idx],
+    gamma = modelsel$gamma[best_idx],
+    max_iter = Inf,
+    tol = 1e-8
+    )
   if (cur_loss > res_cur$loss_function) {
     res <- res_cur
     cur_loss <- res$loss_function

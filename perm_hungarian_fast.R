@@ -8,12 +8,11 @@ perm_hungarian_fast <- function(M_true, M_est, J) {
   norm_true <- rowSums(M_true^2)   # length G
   norm_est  <- rowSums(M_est^2)    # length G
   # Cross-product
-  cross <- M_true %*% t(M_est)     # G x G matrix
+  Cross <- M_true %*% t(M_est)     # G x G matrix
   # Squared distances
-  cost <- outer(norm_true, norm_est, "+") - 2 * cross
+  Cost <- outer(norm_true, norm_est, "+") - 2 * Cross
   # Convert to MSE (mean over rows)
-  cost / J
   ########
-  perm <- solve_LSAP(cost)
+  perm <- solve_LSAP(Cost)
   as.vector(perm)
 }

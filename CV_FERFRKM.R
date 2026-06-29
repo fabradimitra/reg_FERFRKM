@@ -69,27 +69,27 @@ CV_FERFRKM <- function(
             ),
           error = function(e) NULL
         )
-      if (is.null(fit)) {
-          next
-      }
-      centers <- fit$A %*% t(fit$B)   # G x J
-      cnorm2_valid <- rowSums(X_valid^2)     # length n_valid
-      vnorm2 <- rowSums(centers^2)           # length G
-      dist2_valid <- outer(cnorm2_valid, vnorm2, "+") - 2 * (X_valid %*% t(centers))
-      U_valid <- exp(-dist2_valid / vars[2])
-      U_valid <- U_valid / rowSums(U_valid)
-      U_valid[U_valid < 1e-12] <- 1e-12
-      D_valid <- diag(sqrt(colSums(U_valid)))
-      D2_valid <- D_valid^2
-      Cbar_valid <- diag(1/diag(D2_valid)) %*% t(U_valid) %*% X_valid
-      cur_score <- loss_function(U_valid, X_valid, Cbar_valid, D_valid,
-         fit$A, fit$B, K, vars[1], vars[2])$wdev
-      if (is.null(cur_score)|is.na(cur_score)) {
-          next
-      }
-      if(cur_score<score_fin){
-        score_fin <- cur_score
-      }
+        if (is.null(fit)) {
+            next
+        }
+        centers <- fit$A %*% t(fit$B)   # G x J
+        cnorm2_valid <- rowSums(X_valid^2)     # length n_valid
+        vnorm2 <- rowSums(centers^2)           # length G
+        dist2_valid <- outer(cnorm2_valid, vnorm2, "+") - 2 * (X_valid %*% t(centers))
+        U_valid <- exp(-dist2_valid / vars[2])
+        U_valid <- U_valid / rowSums(U_valid)
+        U_valid[U_valid < 1e-12] <- 1e-12
+        D_valid <- diag(sqrt(colSums(U_valid)))
+        D2_valid <- D_valid^2
+        Cbar_valid <- diag(1/diag(D2_valid)) %*% t(U_valid) %*% X_valid
+        cur_score <- loss_function(U_valid, X_valid, Cbar_valid, D_valid,
+          fit$A, fit$B, K, vars[1], vars[2])$wdev
+        if (is.null(cur_score)|is.na(cur_score)) {
+            next
+        }
+        if(cur_score<score_fin){
+          score_fin <- cur_score
+        }
       }
       fold_scores[fold_idx] <- score_fin
       cat("Fold ", fold_idx, "Score ", score_fin)
